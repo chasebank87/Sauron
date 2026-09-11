@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>Observer</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Observer records your microphone so it can capture your side of the meeting and transcribe it on this Mac.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Observer transcribes meetings on-device using Apple Speech. Audio is not sent to Apple or Observer servers.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Observer can use your calendar to notice when a scheduled meeting is in progress. Calendar access is optional.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Observer can use your calendar to notice when a scheduled meeting is in progress. Calendar access is optional.</string>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>Observer captures meeting audio from apps like Zoom or Meet so it can transcribe other participants locally.</string>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>Observer captures the meeting window and system audio. Nothing is uploaded; recordings stay on this Mac.</string>
+</dict>
+</plist>

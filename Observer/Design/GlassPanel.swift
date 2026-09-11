@@ -1,0 +1,149 @@
+import AppKit
+import SwiftUI
+
+enum PanelPlacement: Sendable {
+    case topCenter
+    case trailing
+    case center
+}
+
+private final class ObserverPanel: NSPanel {
+    var allowsKey: Bool = false
+
+    override var canBecomeKey: Bool { allowsKey }
+    override var canBecomeMain: Bool { false }
+}
+
+@MainActor
+final class GlassPanelController {
+    private var panel: NSPanel?
+    private var glassView: NSGlassEffectView?
+    private var hostingView: NSHostingView<AnyView>?
+
+    func present<Content: View>(
+        _ view: Content,
+        size: CGSize,
+        placement: PanelPlacement,
+        activates: Bool = false,
+        usesPaneChrome: Bool = true
+    ) {
+        let hosted = AnyView(view.tint(ObserverTheme.accent))
+        let wantsNonactivating = !activates
+        if let panel, panel.styleMask.contains(.nonactivatingPanel) != wantsNonactivating {
+            close()
+        }
+
+        if let hostingView, let panel {
+            hostingView.rootView = hosted
+            layout(panel: panel, size: size, placement: placement)
+            order(panel, activates: activates)
+            return
+        }
+
+        let panel = ObserverPanel(
+            contentRect: NSRect(origin: .zero, size: size),
+            styleMask: activates
+                ? [.borderless, .fullSizeContentView]
+                : [.borderless, .nonactivatingPanel, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        panel.allowsKey = activates
+        panel.isFloatingPanel = true
+        panel.level = .floating
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        panel.hidesOnDeactivate = false
+        panel.becomesKeyOnlyIfNeeded = !activates
+        panel.isMovableByWindowBackground = true
+        panel.titleVisibility = .hidden
+        panel.titlebarAppearsTransparent = true
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+        panel.animationBehavior = .utilityWindow
+
+        let hosting = NSHostingView(rootView: hosted)
+        hosting.sizingOptions = [.intrinsicContentSize]
+        hosting.wantsLayer = true
+        hosting.layer?.backgroundColor = NSColor.clear.cgColor
+        hosting.frame = NSRect(origin: .zero, size: size)
+        hosting.autoresizingMask = [.width, .height]
+
+        if usesPaneChrome {
+            let glass = NSGlassEffectView(frame: NSRect(origin: .zero, size: size))
+            glass.style = .regular
+            glass.cornerRadius = ObserverTheme.cardRadius
+            glass.contentView = hosting
+            glass.autoresizingMask = [.width, .height]
+            panel.contentView = glass
+            self.glassView = glass
+        } else {
+            let root = NSView(frame: NSRect(origin: .zero, size: size))
+            root.wantsLayer = true
+            root.layer?.backgroundColor = NSColor.clear.cgColor
+            hosting.frame = root.bounds
+            root.addSubview(hosting)
+            panel.contentView = root
+        }
+
+        panel.contentView?.wantsLayer = true
+        panel.contentView?.layer?.backgroundColor = NSColor.clear.cgColor
+
+        self.panel = panel
+        self.hostingView = hosting
+        layout(panel: panel, size: size, placement: placement)
+        order(panel, activates: activates)
+    }
+
+    func close() {
+        panel?.orderOut(nil)
+        panel = nil
+        glassView = nil
+        hostingView = nil
+    }
+
+    var isVisible: Bool { panel?.isVisible == true }
+
+    private func order(_ panel: NSPanel, activates: Bool) {
+        if activates {
+            NSApp.activate(ignoringOtherApps: true)
+            panel.makeKeyAndOrderFront(nil)
+        } else {
+            panel.orderFrontRegardless()
+        }
+    }
+
+    private func layout(panel: NSPanel, size: CGSize, placement: PanelPlacement) {
+        guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+        let visible = screen.visibleFrame
+        let origin: NSPoint
+        switch placement {
+        case .topCenter:
+            origin = NSPoint(
+                x: visible.midX - size.width / 2,
+                y: visible.maxY - size.height - 18
+            )
+        case .trailing:
+            origin = NSPoint(
+                x: visible.maxX - size.width - 22,
+                y: visible.maxY - size.height - 56
+            )
+        case .center:
+            origin = NSPoint(
+                x: visible.midX - size.width / 2,
+                y: visible.midY - size.height / 2
+            )
+        }
+        panel.setFrame(NSRect(origin: origin, size: size), display: true)
+        glassView?.frame = NSRect(origin: .zero, size: size)
+        glassView?.cornerRadius = ObserverTheme.cardRadius
+        hostingView?.frame = NSRect(origin: .zero, size: size)
+    }
+}
+
+enum GlassChrome {
+    static let promptSize = CGSize(width: 480, height: 510)
+    static let transcriptSize = CGSize(width: 400, height: 620)
+    static let errorSize = CGSize(width: 380, height: 160)
+    static let onboardingSize = CGSize(width: 440, height: 660)
+}
