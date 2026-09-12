@@ -110,7 +110,7 @@ struct DashboardWindow: View {
 
     private var statusColor: Color {
         switch appState.status {
-        case .recording: SauronTheme.red
+        case .recording: SauronTheme.ember
         case .processing, .prompt: SauronTheme.amber
         case .detecting: SauronTheme.mint
         case .idle: SauronTheme.textTertiary

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1000" viewBox="0 0 900 1000" fill="none">
+<defs>
+  <linearGradient id="iris" x1="152" y1="296" x2="872" y2="728" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#5B6CFF"/><stop offset="1" stop-color="#A96BFF"/>
+  </linearGradient>
+  <linearGradient id="ember" x1="470" y1="372" x2="556" y2="652" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#FFC46B"/><stop offset="1" stop-color="#FF7A18"/>
+  </linearGradient>
+</defs>
+
+<g transform="translate(162,40) scale(0.56)"><path d="M 214 388 C 352 206, 672 206, 810 388" fill="none" stroke="url(#iris)" stroke-width="24" stroke-linecap="round" opacity="0.5"/>
+<path d="M 214 636 C 352 818, 672 818, 810 636" fill="none" stroke="url(#iris)" stroke-width="24" stroke-linecap="round" opacity="0.5"/>
+<path d="M 148 512 C 300 258, 724 258, 876 512 C 724 766, 300 766, 148 512 Z" fill="none" stroke="url(#iris)" stroke-width="50" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 512 322 C 550 412, 550 612, 512 702 C 474 612, 474 412, 512 322 Z" fill="url(#ember)"/>
+<circle cx="512" cy="496" r="19" fill="#FFF3DC"/></g>
+  <text x="450" y="780" text-anchor="middle" font-family="Inter" font-size="118"
+        font-weight="600" letter-spacing="16" fill="#F2F3F5">SAURON</text>
+  <text x="450" y="848" text-anchor="middle" font-family="Inter" font-size="36"
+        font-weight="500" letter-spacing="6" fill="#9AA0AC">MEETING INTELLIGENCE</text>
+</svg>

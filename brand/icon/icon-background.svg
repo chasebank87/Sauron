@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+<defs>
+  <linearGradient id="bgbase" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#191C25"/><stop offset="0.55" stop-color="#0F1116"/>
+    <stop offset="1" stop-color="#07080B"/>
+  </linearGradient>
+  <radialGradient id="bgiris" cx="300" cy="240" r="640" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#6B72FF" stop-opacity="0.30"/>
+    <stop offset="1" stop-color="#6B72FF" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="bgember" cx="560" cy="880" r="520" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#FF7A18" stop-opacity="0.16"/>
+    <stop offset="1" stop-color="#FF7A18" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+
+<rect width="1024" height="1024" fill="url(#bgbase)"/><rect width="1024" height="1024" fill="url(#bgiris)"/><rect width="1024" height="1024" fill="url(#bgember)"/>
+</svg>

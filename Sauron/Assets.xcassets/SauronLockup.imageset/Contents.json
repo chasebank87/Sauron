@@ -1,0 +1,32 @@
+{
+  "images" : [
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "light"
+        }
+      ],
+      "filename" : "sauron-lockup-horizontal-light.png",
+      "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "sauron-lockup-horizontal-dark.png",
+      "idiom" : "universal"
+    },
+    {
+      "filename" : "sauron-lockup-horizontal-dark.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

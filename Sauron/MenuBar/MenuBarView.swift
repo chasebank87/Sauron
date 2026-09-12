@@ -37,9 +37,7 @@ struct MenuBarView: View {
 
     private var header: some View {
         HStack {
-            Image(systemName: appState.menuSymbol)
-                .foregroundStyle(SauronTheme.accentGradient)
-                .symbolEffect(.pulse, isActive: appState.status == .recording)
+            SauronMarkView(size: 22)
             VStack(alignment: .leading, spacing: 1) {
                 Text("Sauron")
                     .font(.headline)
@@ -182,17 +180,6 @@ struct MenuBarLabel: View {
     var status: AppStatus
 
     var body: some View {
-        Image(systemName: symbol)
-            .symbolRenderingMode(.hierarchical)
-            .accessibilityLabel("Sauron")
-    }
-
-    private var symbol: String {
-        switch status {
-        case .idle, .detecting: "eye"
-        case .prompt: "eye.circle.fill"
-        case .recording: "record.circle.fill"
-        case .processing: "sparkles"
-        }
+        SauronMenuBarMark(status: status)
     }
 }

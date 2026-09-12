@@ -19,10 +19,7 @@ struct RecordPromptView: View {
                             .frame(width: 36, height: 36)
                             .scaleEffect(pulse ? 1.55 : 0.85)
                             .opacity(pulse ? 0 : 0.7)
-                        Image(systemName: "eye.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(SauronTheme.accentGradient)
-                            .symbolEffect(.bounce, value: appeared)
+                        SauronMarkView(size: 28)
                     }
                 }
                 .frame(height: alertEnabled ? 40 : 0)

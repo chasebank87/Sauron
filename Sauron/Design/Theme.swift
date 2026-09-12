@@ -23,13 +23,19 @@ enum SauronTheme {
     static let hairline = adaptiveHairline(strong: false)
     static let hairlineStrong = adaptiveHairline(strong: true)
 
-    // MARK: - Accent (Iris) — same in light and dark
+    // MARK: - Accent (Iris) — brand kit tokens, same in light and dark
+    /// Iris A `#5B6CFF`
     static let irisStart = Color(red: 91 / 255, green: 108 / 255, blue: 255 / 255)
-    static let irisEnd = Color(red: 138 / 255, green: 91 / 255, blue: 255 / 255)
+    /// Iris B `#A96BFF`
+    static let irisEnd = Color(red: 169 / 255, green: 107 / 255, blue: 255 / 255)
     static let irisSolid = Color(red: 107 / 255, green: 114 / 255, blue: 255 / 255)
 
+    /// Ember A `#FFC46B` — warm highlight / slit glow
+    static let emberA = Color(red: 255 / 255, green: 196 / 255, blue: 107 / 255)
+    /// Ember B `#FF7A18` — live capture / recording only
+    static let ember = Color(red: 255 / 255, green: 122 / 255, blue: 24 / 255)
     static let mint = Color(red: 70 / 255, green: 224 / 255, blue: 176 / 255)
-    static let amber = Color(red: 245 / 255, green: 181 / 255, blue: 70 / 255)
+    static let amber = emberA
     static let red = Color(red: 255 / 255, green: 92 / 255, blue: 92 / 255)
 
     static let textPrimary = adaptive(

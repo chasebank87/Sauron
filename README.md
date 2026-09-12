@@ -1,14 +1,29 @@
 # Sauron
 
+<p align="center">
+  <img src="brand/exports/preview-lockup-dark.png" alt="Sauron — The meeting assistant that never blinks." width="520" />
+</p>
+
 A macOS 26 menu bar meeting assistant. Sauron notices when Zoom, Meet, Teams, FaceTime, Webex, or Slack huddles start, prompts you to record, captures locally, transcribes on-device, and writes a report with Ollama, LM Studio, or OpenRouter.
 
 No bot joins the call. Audio and video stay on this Mac. Only transcript text is sent to the model you choose.
 
+Brand assets (mark, lockups, App Icon layers, palette) live in [`brand/`](brand/README.md).
+
+## Install
+
+```bash
+brew tap chasebank87/sauron
+brew install --cask sauron
+```
+
+Upgrade with `brew update && brew upgrade --cask sauron`. See [docs/HOMEBREW.md](docs/HOMEBREW.md) for release packaging and cask maintenance.
+
 ## Requirements
 
 - macOS 26 Tahoe or later
-- Xcode 26
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen)
+- Xcode 26 (for building from source)
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (for building from source)
 - Optional: [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai) for local summaries
 
 ## Build

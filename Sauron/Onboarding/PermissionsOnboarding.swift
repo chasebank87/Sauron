@@ -261,12 +261,13 @@ struct PermissionsOnboarding: View {
 
     private var header: some View {
         VStack(spacing: 10) {
-            Image(systemName: "eye.fill")
-                .font(.system(size: 28, weight: .medium))
-                .symbolRenderingMode(.hierarchical)
-                .symbolEffect(.bounce, options: .nonRepeating, value: confettiToken)
+            SauronMarkView(size: 44)
             Text("Sauron")
                 .font(.title2.weight(.semibold))
+            Text(BrandMark.tagline)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(SauronTheme.textTertiary)
+                .multilineTextAlignment(.center)
             Text(headerCopy)
                 .font(.callout)
                 .foregroundStyle(.secondary)

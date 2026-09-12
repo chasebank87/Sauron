@@ -26,6 +26,7 @@
 		2D57B0B1BA6116573481CE52 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64BAE9890D9BBC67205BEDEA /* MenuBarView.swift */; };
 		316358BCA65B784B929ED2A4 /* MeetingMemoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67D5EE800716500240670C8E /* MeetingMemoryStore.swift */; };
 		320DE19D893B3B9E8369A5D8 /* MediaWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19907B784E624A4A3F8284C6 /* MediaWriter.swift */; };
+		3243435383D4B412E85AC535 /* BrandMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962751BE7191AD7CD04B984C /* BrandMark.swift */; };
 		3788ECB5E027DE5CE1C195CB /* DashboardChatStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB007E425FF4315F412548B0 /* DashboardChatStore.swift */; };
 		37FF9A2A504FCE82E6FD1C49 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A874D0741542DDEAC7C74A4 /* SettingsView.swift */; };
 		3A4301ED89861A943183E4CC /* PermissionProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 438361C15BD9375806AB8324 /* PermissionProbe.swift */; };
@@ -157,6 +158,7 @@
 		8D468CFCF3B07323F6601D6F /* SpeakerProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerProfileStore.swift; sourceTree = "<group>"; };
 		8DD940E5C35DE38E8E07402C /* Sauron.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sauron.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8DDF5D0FBBF75FA465CD9F45 /* TranscriptPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptPanel.swift; sourceTree = "<group>"; };
+		962751BE7191AD7CD04B984C /* BrandMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandMark.swift; sourceTree = "<group>"; };
 		962B70CA7B5DBA924EE46858 /* DashboardMemoryTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardMemoryTab.swift; sourceTree = "<group>"; };
 		9BA10B6753304EB58A44131C /* PresenceHeuristicsScorer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceHeuristicsScorer.swift; sourceTree = "<group>"; };
 		9CF08E5AB181694924393655 /* MeetingDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDetector.swift; sourceTree = "<group>"; };
@@ -280,6 +282,7 @@
 		38444843515851E9229648BD /* Design */ = {
 			isa = PBXGroup;
 			children = (
+				962751BE7191AD7CD04B984C /* BrandMark.swift */,
 				66179ED191094D5C0A18697C /* GlassPanel.swift */,
 				BC4E0974B86E14839A439EB3 /* LiquidGlassScrollChrome.swift */,
 				5D5EFE6879936B26EA5368CE /* ReactiveWaveformLine.swift */,
@@ -562,6 +565,7 @@
 				6BE03660B467703C1E75EC4D /* AudioDeviceCatalog.swift in Sources */,
 				48B52484E977C0C718D19E76 /* AudioPCM.swift in Sources */,
 				676BCA749D601A0026FA6411 /* AudioSignalMonitor.swift in Sources */,
+				3243435383D4B412E85AC535 /* BrandMark.swift in Sources */,
 				478DD42FA1848670C7FE4E0F /* CalendarSignal.swift in Sources */,
 				8D576191CDD25804184A6787 /* CaptureEngine.swift in Sources */,
 				7E50D2DCDA7DCC4BF17D3A22 /* ConfettiCannonView.swift in Sources */,
@@ -657,7 +661,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = MZSC4FTLNA;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -672,7 +676,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.Sauron;
 				PRODUCT_NAME = Sauron;
 				SDKROOT = macosx;
@@ -690,7 +694,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = MZSC4FTLNA;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -705,7 +709,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.Sauron;
 				PRODUCT_NAME = Sauron;
 				SDKROOT = macosx;
