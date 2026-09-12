@@ -7,7 +7,7 @@ cask "sauron" do
   desc "Menu bar meeting assistant with local capture, transcripts, and memory"
   homepage "https://github.com/chasebank87/Sauron"
 
-  depends_on macos: ">= :tahoe"
+  depends_on macos: :tahoe
 
   app "Sauron.app"
 
