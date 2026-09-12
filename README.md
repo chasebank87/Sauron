@@ -1,6 +1,6 @@
-# Observer
+# Sauron
 
-A macOS 26 menu bar meeting assistant. Observer notices when Zoom, Meet, Teams, FaceTime, Webex, or Slack huddles start, prompts you to record, captures locally, transcribes on-device, and writes a report with Ollama, LM Studio, or OpenRouter.
+A macOS 26 menu bar meeting assistant. Sauron notices when Zoom, Meet, Teams, FaceTime, Webex, or Slack huddles start, prompts you to record, captures locally, transcribes on-device, and writes a report with Ollama, LM Studio, or OpenRouter.
 
 No bot joins the call. Audio and video stay on this Mac. Only transcript text is sent to the model you choose.
 
@@ -15,18 +15,18 @@ No bot joins the call. Audio and video stay on this Mac. Only transcript text is
 
 ```bash
 xcodegen generate
-open Observer.xcodeproj
+open Sauron.xcodeproj
 ```
 
-Run the **Observer** scheme. The app lives in the menu bar (no Dock icon).
+Run the **Sauron** scheme. The app lives in the menu bar (no Dock icon).
 
 ## First launch
 
 1. Grant Screen Recording, Microphone, and Speech Recognition when asked.
 2. Open the menu bar extra → **Simulate meeting** to exercise the glass prompt without a real call.
-3. In Settings → Models, point Observer at Ollama (`http://127.0.0.1:11434`), LM Studio (`http://127.0.0.1:1234`), OpenRouter, Hermes (`http://127.0.0.1:8642`), or OpenClaw (`http://127.0.0.1:18789`).
+3. In Settings → Models, point Sauron at Ollama (`http://127.0.0.1:11434`), LM Studio (`http://127.0.0.1:1234`), OpenRouter, Hermes (`http://127.0.0.1:8642`), or OpenClaw (`http://127.0.0.1:18789`).
 
-Recordings and the SwiftData store live in `~/Library/Application Support/Observer/`.
+Recordings and the SwiftData store live in `~/Library/Application Support/Sauron/`.
 
 With **Hermes** or **OpenClaw**, Live Assist research uses the agent’s tools; Tavily settings are hidden for those backends.
 
@@ -40,7 +40,7 @@ Speaker Profiles (renameable self on mic, remote voice clustering, report assign
 
 ## Phase 3 — Meeting memory
 
-Local RAG index under `~/Library/Application Support/Observer/Memory/`. Embeddings via Ollama, LM Studio, or OpenRouter (`/v1/embeddings`). Retrieved chunks feed post-meeting summaries, Live Assist “From past meetings” cards, and Dashboard Chat. Soft-fails if embeddings are unavailable.
+Local RAG index under `~/Library/Application Support/Sauron/Memory/`. Embeddings via Ollama, LM Studio, or OpenRouter (`/v1/embeddings`). Retrieved chunks feed post-meeting summaries, Live Assist “From past meetings” cards, and Dashboard Chat. Soft-fails if embeddings are unavailable.
 
 ## Phase 4 — Dashboard
 

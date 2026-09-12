@@ -1,0 +1,928 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		002D509ABF6E4A4EC6A5CEC1 /* WindowShareAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = F127B78E5E5AB1D04954FBE7 /* WindowShareAccess.swift */; };
+		0222E625B7DC1E1FE26474D2 /* DashboardHomeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C0B1EE8A9A54A430009E86 /* DashboardHomeTab.swift */; };
+		028E0F868611E2ABEE38B706 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A88653CB16E58B08B97254 /* Models.swift */; };
+		0662F8AD7507B1A31878B4A8 /* Types.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358C4E339FFCA3376302B905 /* Types.swift */; };
+		095753BC13A0C8EDADA26E93 /* DashboardPeopleTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EFAB08E9757A877A8B0D3D8 /* DashboardPeopleTab.swift */; };
+		0D788E2C8E025A6EF560FF73 /* MeetingUserNotesEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C6840B3B6B1A3CD5C12FFBD /* MeetingUserNotesEditor.swift */; };
+		13D1EF81ABB236EFD7D50FCB /* ScreenCaptureKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1AF46443357CE1489E9B285B /* ScreenCaptureKit.framework */; };
+		1A53169C96BFF6627ED6684D /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA276104BB054D2335E4126A /* Theme.swift */; };
+		1C84A7E8CB849EB7FB5DCFEC /* PresenceHeuristicsScorer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BA10B6753304EB58A44131C /* PresenceHeuristicsScorer.swift */; };
+		1CFB9E7E7C62E1069EFE9C9B /* DashboardLibraryTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFA0680AB2FEDF1F2AC1762D /* DashboardLibraryTab.swift */; };
+		21B0179880B7C52825D1E6FA /* MediaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8571CDE2A345DFBA4D63B9 /* MediaStore.swift */; };
+		2328BEF8DFF38C86AE90AB8A /* LMStudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFC258887C774ECC15376E24 /* LMStudio.swift */; };
+		233C6C7ADB41CE31419415B6 /* MCPProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E4BC7E5DDEA8EAA89CBF27 /* MCPProtocol.swift */; };
+		28C78BEF9E4DADD0CD0D4052 /* Speech.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2E0F4F2BEC7D8273CD847AC4 /* Speech.framework */; };
+		2CDB9EAD992121C3D27621D4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CCC17F03C2466F5C4B8D60BD /* Assets.xcassets */; };
+		2D542DFDD639F5A0E8E7EE02 /* DocumentTextExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15211A717601E5D65B5D5E95 /* DocumentTextExtractor.swift */; };
+		2D57B0B1BA6116573481CE52 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64BAE9890D9BBC67205BEDEA /* MenuBarView.swift */; };
+		316358BCA65B784B929ED2A4 /* MeetingMemoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67D5EE800716500240670C8E /* MeetingMemoryStore.swift */; };
+		320DE19D893B3B9E8369A5D8 /* MediaWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19907B784E624A4A3F8284C6 /* MediaWriter.swift */; };
+		3788ECB5E027DE5CE1C195CB /* DashboardChatStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB007E425FF4315F412548B0 /* DashboardChatStore.swift */; };
+		37FF9A2A504FCE82E6FD1C49 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A874D0741542DDEAC7C74A4 /* SettingsView.swift */; };
+		3A4301ED89861A943183E4CC /* PermissionProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 438361C15BD9375806AB8324 /* PermissionProbe.swift */; };
+		3DBD990DCB65ECD9279DECE6 /* LiveAssistPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0F7A361849C15BF7EE35F9 /* LiveAssistPanel.swift */; };
+		41A46147CFD03B03B9B5D524 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3023EB74C109DDDE89835020 /* AppState.swift */; };
+		478DD42FA1848670C7FE4E0F /* CalendarSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4778FAA96D8BF761FEECABB9 /* CalendarSignal.swift */; };
+		48B52484E977C0C718D19E76 /* AudioPCM.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C3ADC0C48A8E1E4D77165E /* AudioPCM.swift */; };
+		4DDD7DB4D9DEB8DF80A2344C /* SauronApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7769DE6ECE22495B70D803B /* SauronApp.swift */; };
+		4EB290509FE3EB0FC43756BB /* MeetingChunker.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEE057EE0B032D085403F3D8 /* MeetingChunker.swift */; };
+		4EFCB1058864E87C0F01133C /* DashboardComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D8069D231FFD188C2B244BC /* DashboardComponents.swift */; };
+		52FEE8ABF3FF182E456775EE /* ReactiveWaveformLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D5EFE6879936B26EA5368CE /* ReactiveWaveformLine.swift */; };
+		53BC8C458F5F360F2F416F6C /* SpeakerProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D468CFCF3B07323F6601D6F /* SpeakerProfileStore.swift */; };
+		542A047834E55B221940B742 /* TrackedItemReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EC39D00FCF6A891E7903A5D /* TrackedItemReconciler.swift */; };
+		55522DB8F28D32DAD5AC3EEA /* MeetingMemoryIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D4C378F0AC696AD74B30F5 /* MeetingMemoryIndexer.swift */; };
+		55D27F05526685B7D319C352 /* MeetingWindowPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 864C79DFACFEE1C17BD49859 /* MeetingWindowPicker.swift */; };
+		58011291A9A02C7FFAA8B44F /* WindowOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCB1032AF945A9AD1D2DAB8 /* WindowOpener.swift */; };
+		5BD901FD3163A1AA7284CAAA /* LLMClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D186E7FE68A4450A5E3F31C /* LLMClient.swift */; };
+		5FC2CEDAB8BA30675FFEE5A4 /* ScreenCaptureAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EBC3BD160FC5C75BDB95D49 /* ScreenCaptureAccess.swift */; };
+		60BC145F8539FE48885A2C26 /* GlobalHotkeyMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707BC17E5CE3C97484E02177 /* GlobalHotkeyMonitor.swift */; };
+		676BCA749D601A0026FA6411 /* AudioSignalMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3B6D748A84893DF9D327B5D /* AudioSignalMonitor.swift */; };
+		67F5297EC0765D5AE0A4C4D5 /* SwiftData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DBFBB9DA1AA3338C2EAA0EE /* SwiftData.framework */; };
+		691DC3AACC62C23347267954 /* NeuralMeetingDiarizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AA532BA80C7828E5709B9BD /* NeuralMeetingDiarizer.swift */; };
+		6B640DCFF5987C7C281D2D83 /* DashboardInsightsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B4009E38308F7C363D41E6 /* DashboardInsightsTab.swift */; };
+		6BE03660B467703C1E75EC4D /* AudioDeviceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 164692D51C8A94E32656A0D1 /* AudioDeviceCatalog.swift */; };
+		719B8D4A7F225661D78DCBAD /* DashboardAskTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB695135BBB11FDCDA351763 /* DashboardAskTab.swift */; };
+		74FF7540E7272C0A81EF7558 /* PromptAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE0C6B42B569F67E5CDD033 /* PromptAlert.swift */; };
+		75E9E770FB410534CE5EAC05 /* MeetingMemoryQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB39325F05D96ED33C8A82D /* MeetingMemoryQuery.swift */; };
+		77B862579BF821B2AA6CD307 /* TranscriptPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDF5D0FBBF75FA465CD9F45 /* TranscriptPanel.swift */; };
+		79AE9AD58429C2674124C6F8 /* HermesMCPInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6AA3978C3E8A54D1B20B99 /* HermesMCPInstaller.swift */; };
+		7E50D2DCDA7DCC4BF17D3A22 /* ConfettiCannonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A27E1668E53470A282F524 /* ConfettiCannonView.swift */; };
+		857E146A1920916744973A5D /* TavilyClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19CFA7BC3BCE0F4BE73472CE /* TavilyClient.swift */; };
+		8D576191CDD25804184A6787 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBCFF4BCD9B174875C77DEE4 /* CaptureEngine.swift */; };
+		902B164FE761C1B472AD6887 /* MemoryMCPHandlers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B0316E30DB3E471E39118F5 /* MemoryMCPHandlers.swift */; };
+		92B56E8FA4E31A570B8C9EFB /* ParakeetRetranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40096BAA079D8FA16E8741A /* ParakeetRetranscriber.swift */; };
+		9302BEFF04C3BAB3B32B7287 /* MediaCompose.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0142BA11EB3AF1C74BACEE1 /* MediaCompose.swift */; };
+		938F45286595FD935129C07F /* LiveAssistantEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3693EFF0B0BEC91A599D373F /* LiveAssistantEngine.swift */; };
+		962F05DF755668BA3EEC3171 /* MeetingAppCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE6E3E4849B9553E0F944A56 /* MeetingAppCatalog.swift */; };
+		9CFCF19D86BF1CDA860DC809 /* SpeakerDiarizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BDD38A02DCD4D041036A917 /* SpeakerDiarizer.swift */; };
+		9D83194945381FE9D5E45551 /* MeetingDocumentsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB0812581ED258DA87687B8A /* MeetingDocumentsSection.swift */; };
+		9DEFB6C5796126A906E33269 /* PermissionsOnboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = E783C190734A044F4D11D5DE /* PermissionsOnboarding.swift */; };
+		B204E2EE1444E772AA1A1923 /* MeetingDiarizing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B0E6982AFBB133DBE973628 /* MeetingDiarizing.swift */; };
+		B43E8B7335DBAFC5F2D6068A /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 1926D9934CF11D35C75662E9 /* FluidAudio */; };
+		B43F95A164C7BCB455115C43 /* Ollama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37DC158E71F8C6F1BA222EDF /* Ollama.swift */; };
+		B67A7500599E4A77A421B457 /* PDFKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CC7D1E9E085C1F78FED6DE88 /* PDFKit.framework */; };
+		B787A71F5AD18A25DC409828 /* SauronTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB2F533C9E9835FCE420DA7 /* SauronTests.swift */; };
+		B8ED2A43E45E2E57C25CE40A /* RecordPromptPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBAF7F3710D642513A02FE47 /* RecordPromptPanel.swift */; };
+		B9813C397D1F2D27B50B4801 /* DashboardMemoryTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962B70CA7B5DBA924EE46858 /* DashboardMemoryTab.swift */; };
+		B9A708ABC335BA51413B3C3D /* MeetingDocumentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C416F65690F1F4BF23A317B /* MeetingDocumentStore.swift */; };
+		BB00336728F7CE3F2587E9CA /* MeetingDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CF08E5AB181694924393655 /* MeetingDetector.swift */; };
+		BF2581954DE70D184D135BAD /* ReportWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD7CBA799AC3C99EEC8AF92B /* ReportWindow.swift */; };
+		BF57DEF911CC2846DE4AAF86 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 15AA933F23A55ADA2C1CA91F /* AVFoundation.framework */; };
+		C7D2BFA242EBA6DA302CB1E2 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51B4BC53805606E0E673C85E /* SettingsStore.swift */; };
+		CA64CFEA0C8C677401050351 /* Summarizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB41B13BE838372D5696C6C0 /* Summarizer.swift */; };
+		CAB9D2C7AB2CC7850E2B5482 /* OpenRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49093D84545E5B795DF11DEB /* OpenRouter.swift */; };
+		CB2091EAA0037AD68D1364BC /* TrackedItemStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ED3188298AB89CC0207CE1 /* TrackedItemStore.swift */; };
+		CC2B57ED42DCF83E84FC1B74 /* TranscriptionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8512556CB5E8B8E5F1EE200A /* TranscriptionEngine.swift */; };
+		CD98F6566875DBFA6F622FF8 /* RecordingAmbientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1518A936C6324820200B1A3 /* RecordingAmbientBackground.swift */; };
+		D3A4AF242B3DD46E4FEF7AD8 /* GlassPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66179ED191094D5C0A18697C /* GlassPanel.swift */; };
+		D5141986501AA79B0368BAD6 /* MeetingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7373580292D5939611ACCB4D /* MeetingStore.swift */; };
+		D8093E3669511F0A75D7B3CE /* EventKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CCE239FF6E2FF9E668538C6 /* EventKit.framework */; };
+		D8E5D42A037FEB0AB56D6137 /* MemoryMCPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D00DFE50D662587D4A57ADB /* MemoryMCPServer.swift */; };
+		DA581BE6D3AFC6EDCC26F0B6 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8BDECCB56EFD373D354985B /* KeychainStore.swift */; };
+		E2395AF9EF8487C495CBB377 /* AgentProviders.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE17A969BCFD53E1BEE8919F /* AgentProviders.swift */; };
+		E2F8F569B20DA0A2CC1C518A /* DashboardWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D9E3818321CE657581EBDC2 /* DashboardWindow.swift */; };
+		EB6B807B0A5604DE56353609 /* Charts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5E401A517DF9B9004B319314 /* Charts.framework */; };
+		F811916A1F2CCE0B89E7B2EE /* FluidAudioModelStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BAB738C3D6CD3024684BFAF /* FluidAudioModelStore.swift */; };
+		FA9A261795F6D11F075517C1 /* LiquidGlassScrollChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC4E0974B86E14839A439EB3 /* LiquidGlassScrollChrome.swift */; };
+		FEA14FC697B5A2304E36521D /* DashboardAsksTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = C643F0962D4EB961673F5542 /* DashboardAsksTab.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		15B0706ED5A00714ABA30446 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3BF52D2E75C79B594C2986B7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 991C47EFC7630FA8FA91C454;
+			remoteInfo = Sauron;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0A874D0741542DDEAC7C74A4 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		0AA532BA80C7828E5709B9BD /* NeuralMeetingDiarizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeuralMeetingDiarizer.swift; sourceTree = "<group>"; };
+		0EB39325F05D96ED33C8A82D /* MeetingMemoryQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingMemoryQuery.swift; sourceTree = "<group>"; };
+		14A88653CB16E58B08B97254 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		15211A717601E5D65B5D5E95 /* DocumentTextExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentTextExtractor.swift; sourceTree = "<group>"; };
+		15AA933F23A55ADA2C1CA91F /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		164692D51C8A94E32656A0D1 /* AudioDeviceCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceCatalog.swift; sourceTree = "<group>"; };
+		18B4009E38308F7C363D41E6 /* DashboardInsightsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardInsightsTab.swift; sourceTree = "<group>"; };
+		19907B784E624A4A3F8284C6 /* MediaWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaWriter.swift; sourceTree = "<group>"; };
+		19CFA7BC3BCE0F4BE73472CE /* TavilyClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilyClient.swift; sourceTree = "<group>"; };
+		1AF46443357CE1489E9B285B /* ScreenCaptureKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ScreenCaptureKit.framework; path = System/Library/Frameworks/ScreenCaptureKit.framework; sourceTree = SDKROOT; };
+		2D186E7FE68A4450A5E3F31C /* LLMClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMClient.swift; sourceTree = "<group>"; };
+		2E0F4F2BEC7D8273CD847AC4 /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
+		3023EB74C109DDDE89835020 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		358C4E339FFCA3376302B905 /* Types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Types.swift; sourceTree = "<group>"; };
+		3693EFF0B0BEC91A599D373F /* LiveAssistantEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveAssistantEngine.swift; sourceTree = "<group>"; };
+		37DC158E71F8C6F1BA222EDF /* Ollama.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ollama.swift; sourceTree = "<group>"; };
+		3A8571CDE2A345DFBA4D63B9 /* MediaStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaStore.swift; sourceTree = "<group>"; };
+		3BDD38A02DCD4D041036A917 /* SpeakerDiarizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerDiarizer.swift; sourceTree = "<group>"; };
+		3D8069D231FFD188C2B244BC /* DashboardComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardComponents.swift; sourceTree = "<group>"; };
+		3D9E3818321CE657581EBDC2 /* DashboardWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardWindow.swift; sourceTree = "<group>"; };
+		3EBC3BD160FC5C75BDB95D49 /* ScreenCaptureAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureAccess.swift; sourceTree = "<group>"; };
+		438361C15BD9375806AB8324 /* PermissionProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionProbe.swift; sourceTree = "<group>"; };
+		46E4BC7E5DDEA8EAA89CBF27 /* MCPProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPProtocol.swift; sourceTree = "<group>"; };
+		4778FAA96D8BF761FEECABB9 /* CalendarSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarSignal.swift; sourceTree = "<group>"; };
+		49093D84545E5B795DF11DEB /* OpenRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenRouter.swift; sourceTree = "<group>"; };
+		4BAB738C3D6CD3024684BFAF /* FluidAudioModelStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluidAudioModelStore.swift; sourceTree = "<group>"; };
+		51B4BC53805606E0E673C85E /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
+		52A27E1668E53470A282F524 /* ConfettiCannonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiCannonView.swift; sourceTree = "<group>"; };
+		5CCE239FF6E2FF9E668538C6 /* EventKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = EventKit.framework; path = System/Library/Frameworks/EventKit.framework; sourceTree = SDKROOT; };
+		5D5EFE6879936B26EA5368CE /* ReactiveWaveformLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReactiveWaveformLine.swift; sourceTree = "<group>"; };
+		5E401A517DF9B9004B319314 /* Charts.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Charts.framework; path = System/Library/Frameworks/Charts.framework; sourceTree = SDKROOT; };
+		5EC39D00FCF6A891E7903A5D /* TrackedItemReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackedItemReconciler.swift; sourceTree = "<group>"; };
+		5EFAB08E9757A877A8B0D3D8 /* DashboardPeopleTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardPeopleTab.swift; sourceTree = "<group>"; };
+		64BAE9890D9BBC67205BEDEA /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		66179ED191094D5C0A18697C /* GlassPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassPanel.swift; sourceTree = "<group>"; };
+		67D5EE800716500240670C8E /* MeetingMemoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingMemoryStore.swift; sourceTree = "<group>"; };
+		6B0316E30DB3E471E39118F5 /* MemoryMCPHandlers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryMCPHandlers.swift; sourceTree = "<group>"; };
+		6B0E6982AFBB133DBE973628 /* MeetingDiarizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDiarizing.swift; sourceTree = "<group>"; };
+		6C6840B3B6B1A3CD5C12FFBD /* MeetingUserNotesEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingUserNotesEditor.swift; sourceTree = "<group>"; };
+		707BC17E5CE3C97484E02177 /* GlobalHotkeyMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyMonitor.swift; sourceTree = "<group>"; };
+		7373580292D5939611ACCB4D /* MeetingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingStore.swift; sourceTree = "<group>"; };
+		7C416F65690F1F4BF23A317B /* MeetingDocumentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDocumentStore.swift; sourceTree = "<group>"; };
+		7D00DFE50D662587D4A57ADB /* MemoryMCPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryMCPServer.swift; sourceTree = "<group>"; };
+		7D0F7A361849C15BF7EE35F9 /* LiveAssistPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveAssistPanel.swift; sourceTree = "<group>"; };
+		8512556CB5E8B8E5F1EE200A /* TranscriptionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionEngine.swift; sourceTree = "<group>"; };
+		864C79DFACFEE1C17BD49859 /* MeetingWindowPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingWindowPicker.swift; sourceTree = "<group>"; };
+		8D468CFCF3B07323F6601D6F /* SpeakerProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerProfileStore.swift; sourceTree = "<group>"; };
+		8DD940E5C35DE38E8E07402C /* Sauron.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sauron.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8DDF5D0FBBF75FA465CD9F45 /* TranscriptPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptPanel.swift; sourceTree = "<group>"; };
+		962B70CA7B5DBA924EE46858 /* DashboardMemoryTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardMemoryTab.swift; sourceTree = "<group>"; };
+		9BA10B6753304EB58A44131C /* PresenceHeuristicsScorer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceHeuristicsScorer.swift; sourceTree = "<group>"; };
+		9CF08E5AB181694924393655 /* MeetingDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDetector.swift; sourceTree = "<group>"; };
+		9DBFBB9DA1AA3338C2EAA0EE /* SwiftData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftData.framework; path = System/Library/Frameworks/SwiftData.framework; sourceTree = SDKROOT; };
+		A1D4C378F0AC696AD74B30F5 /* MeetingMemoryIndexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingMemoryIndexer.swift; sourceTree = "<group>"; };
+		A40096BAA079D8FA16E8741A /* ParakeetRetranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParakeetRetranscriber.swift; sourceTree = "<group>"; };
+		AB41B13BE838372D5696C6C0 /* Summarizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Summarizer.swift; sourceTree = "<group>"; };
+		AB695135BBB11FDCDA351763 /* DashboardAskTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardAskTab.swift; sourceTree = "<group>"; };
+		AE17A969BCFD53E1BEE8919F /* AgentProviders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentProviders.swift; sourceTree = "<group>"; };
+		B0142BA11EB3AF1C74BACEE1 /* MediaCompose.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCompose.swift; sourceTree = "<group>"; };
+		B9C0B1EE8A9A54A430009E86 /* DashboardHomeTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardHomeTab.swift; sourceTree = "<group>"; };
+		BAE0C6B42B569F67E5CDD033 /* PromptAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptAlert.swift; sourceTree = "<group>"; };
+		BB007E425FF4315F412548B0 /* DashboardChatStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardChatStore.swift; sourceTree = "<group>"; };
+		BC4E0974B86E14839A439EB3 /* LiquidGlassScrollChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlassScrollChrome.swift; sourceTree = "<group>"; };
+		BDCB1032AF945A9AD1D2DAB8 /* WindowOpener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowOpener.swift; sourceTree = "<group>"; };
+		BEE057EE0B032D085403F3D8 /* MeetingChunker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingChunker.swift; sourceTree = "<group>"; };
+		C643F0962D4EB961673F5542 /* DashboardAsksTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardAsksTab.swift; sourceTree = "<group>"; };
+		C7769DE6ECE22495B70D803B /* SauronApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SauronApp.swift; sourceTree = "<group>"; };
+		CBAF7F3710D642513A02FE47 /* RecordPromptPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordPromptPanel.swift; sourceTree = "<group>"; };
+		CC7D1E9E085C1F78FED6DE88 /* PDFKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PDFKit.framework; path = System/Library/Frameworks/PDFKit.framework; sourceTree = SDKROOT; };
+		CCC17F03C2466F5C4B8D60BD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		CD7CBA799AC3C99EEC8AF92B /* ReportWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportWindow.swift; sourceTree = "<group>"; };
+		CFC258887C774ECC15376E24 /* LMStudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LMStudio.swift; sourceTree = "<group>"; };
+		D1518A936C6324820200B1A3 /* RecordingAmbientBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingAmbientBackground.swift; sourceTree = "<group>"; };
+		D3B6D748A84893DF9D327B5D /* AudioSignalMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSignalMonitor.swift; sourceTree = "<group>"; };
+		D8BDECCB56EFD373D354985B /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		DAB2F533C9E9835FCE420DA7 /* SauronTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SauronTests.swift; sourceTree = "<group>"; };
+		DBCFF4BCD9B174875C77DEE4 /* CaptureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureEngine.swift; sourceTree = "<group>"; };
+		E1514F9076DF6EB2FDC42B00 /* SauronTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SauronTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E783C190734A044F4D11D5DE /* PermissionsOnboarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsOnboarding.swift; sourceTree = "<group>"; };
+		EB0812581ED258DA87687B8A /* MeetingDocumentsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDocumentsSection.swift; sourceTree = "<group>"; };
+		EB6AA3978C3E8A54D1B20B99 /* HermesMCPInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HermesMCPInstaller.swift; sourceTree = "<group>"; };
+		EFA0680AB2FEDF1F2AC1762D /* DashboardLibraryTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardLibraryTab.swift; sourceTree = "<group>"; };
+		F127B78E5E5AB1D04954FBE7 /* WindowShareAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowShareAccess.swift; sourceTree = "<group>"; };
+		F4C3ADC0C48A8E1E4D77165E /* AudioPCM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPCM.swift; sourceTree = "<group>"; };
+		F7ED3188298AB89CC0207CE1 /* TrackedItemStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackedItemStore.swift; sourceTree = "<group>"; };
+		FA276104BB054D2335E4126A /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		FE6E3E4849B9553E0F944A56 /* MeetingAppCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingAppCatalog.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A32E6AAB0BADA3D78BB0E6A7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				13D1EF81ABB236EFD7D50FCB /* ScreenCaptureKit.framework in Frameworks */,
+				28C78BEF9E4DADD0CD0D4052 /* Speech.framework in Frameworks */,
+				D8093E3669511F0A75D7B3CE /* EventKit.framework in Frameworks */,
+				BF57DEF911CC2846DE4AAF86 /* AVFoundation.framework in Frameworks */,
+				67F5297EC0765D5AE0A4C4D5 /* SwiftData.framework in Frameworks */,
+				EB6B807B0A5604DE56353609 /* Charts.framework in Frameworks */,
+				B67A7500599E4A77A421B457 /* PDFKit.framework in Frameworks */,
+				B43E8B7335DBAFC5F2D6068A /* FluidAudio in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		122B8A3546016ED225E38D50 = {
+			isa = PBXGroup;
+			children = (
+				DB54E70816F4AB14A758A07F /* Sauron */,
+				F69939E9113D087EB69C1CD7 /* SauronTests */,
+				2A66E7DCA2A8A77F170757D1 /* Frameworks */,
+				D80647AC60A60141592D4B46 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1E3164DFDCADAA02F329CD6A /* Transcription */ = {
+			isa = PBXGroup;
+			children = (
+				4BAB738C3D6CD3024684BFAF /* FluidAudioModelStore.swift */,
+				6B0E6982AFBB133DBE973628 /* MeetingDiarizing.swift */,
+				0AA532BA80C7828E5709B9BD /* NeuralMeetingDiarizer.swift */,
+				A40096BAA079D8FA16E8741A /* ParakeetRetranscriber.swift */,
+				3BDD38A02DCD4D041036A917 /* SpeakerDiarizer.swift */,
+				8512556CB5E8B8E5F1EE200A /* TranscriptionEngine.swift */,
+			);
+			path = Transcription;
+			sourceTree = "<group>";
+		};
+		21351604C2CBAC91A1CD9A22 /* Providers */ = {
+			isa = PBXGroup;
+			children = (
+				AE17A969BCFD53E1BEE8919F /* AgentProviders.swift */,
+				EB6AA3978C3E8A54D1B20B99 /* HermesMCPInstaller.swift */,
+				2D186E7FE68A4450A5E3F31C /* LLMClient.swift */,
+				CFC258887C774ECC15376E24 /* LMStudio.swift */,
+				37DC158E71F8C6F1BA222EDF /* Ollama.swift */,
+				49093D84545E5B795DF11DEB /* OpenRouter.swift */,
+				19CFA7BC3BCE0F4BE73472CE /* TavilyClient.swift */,
+			);
+			path = Providers;
+			sourceTree = "<group>";
+		};
+		2A3144F9EA34D2851C865552 /* MCP */ = {
+			isa = PBXGroup;
+			children = (
+				46E4BC7E5DDEA8EAA89CBF27 /* MCPProtocol.swift */,
+				6B0316E30DB3E471E39118F5 /* MemoryMCPHandlers.swift */,
+				7D00DFE50D662587D4A57ADB /* MemoryMCPServer.swift */,
+			);
+			path = MCP;
+			sourceTree = "<group>";
+		};
+		2A66E7DCA2A8A77F170757D1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				15AA933F23A55ADA2C1CA91F /* AVFoundation.framework */,
+				5E401A517DF9B9004B319314 /* Charts.framework */,
+				5CCE239FF6E2FF9E668538C6 /* EventKit.framework */,
+				CC7D1E9E085C1F78FED6DE88 /* PDFKit.framework */,
+				1AF46443357CE1489E9B285B /* ScreenCaptureKit.framework */,
+				2E0F4F2BEC7D8273CD847AC4 /* Speech.framework */,
+				9DBFBB9DA1AA3338C2EAA0EE /* SwiftData.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		38444843515851E9229648BD /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				66179ED191094D5C0A18697C /* GlassPanel.swift */,
+				BC4E0974B86E14839A439EB3 /* LiquidGlassScrollChrome.swift */,
+				5D5EFE6879936B26EA5368CE /* ReactiveWaveformLine.swift */,
+				D1518A936C6324820200B1A3 /* RecordingAmbientBackground.swift */,
+				FA276104BB054D2335E4126A /* Theme.swift */,
+			);
+			path = Design;
+			sourceTree = "<group>";
+		};
+		3855A0A0C9AE39FC9291F7DB /* App */ = {
+			isa = PBXGroup;
+			children = (
+				3023EB74C109DDDE89835020 /* AppState.swift */,
+				707BC17E5CE3C97484E02177 /* GlobalHotkeyMonitor.swift */,
+				438361C15BD9375806AB8324 /* PermissionProbe.swift */,
+				BAE0C6B42B569F67E5CDD033 /* PromptAlert.swift */,
+				358C4E339FFCA3376302B905 /* Types.swift */,
+				BDCB1032AF945A9AD1D2DAB8 /* WindowOpener.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		3D23A8711E1C13DDD4421AF3 /* MenuBar */ = {
+			isa = PBXGroup;
+			children = (
+				64BAE9890D9BBC67205BEDEA /* MenuBarView.swift */,
+			);
+			path = MenuBar;
+			sourceTree = "<group>";
+		};
+		7220DEBEB4A5A7130999FC36 /* Capture */ = {
+			isa = PBXGroup;
+			children = (
+				164692D51C8A94E32656A0D1 /* AudioDeviceCatalog.swift */,
+				F4C3ADC0C48A8E1E4D77165E /* AudioPCM.swift */,
+				D3B6D748A84893DF9D327B5D /* AudioSignalMonitor.swift */,
+				DBCFF4BCD9B174875C77DEE4 /* CaptureEngine.swift */,
+				B0142BA11EB3AF1C74BACEE1 /* MediaCompose.swift */,
+				19907B784E624A4A3F8284C6 /* MediaWriter.swift */,
+				3EBC3BD160FC5C75BDB95D49 /* ScreenCaptureAccess.swift */,
+				F127B78E5E5AB1D04954FBE7 /* WindowShareAccess.swift */,
+			);
+			path = Capture;
+			sourceTree = "<group>";
+		};
+		7BED0A583ADD40C278707678 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				C643F0962D4EB961673F5542 /* DashboardAsksTab.swift */,
+				AB695135BBB11FDCDA351763 /* DashboardAskTab.swift */,
+				3D8069D231FFD188C2B244BC /* DashboardComponents.swift */,
+				B9C0B1EE8A9A54A430009E86 /* DashboardHomeTab.swift */,
+				18B4009E38308F7C363D41E6 /* DashboardInsightsTab.swift */,
+				EFA0680AB2FEDF1F2AC1762D /* DashboardLibraryTab.swift */,
+				962B70CA7B5DBA924EE46858 /* DashboardMemoryTab.swift */,
+				5EFAB08E9757A877A8B0D3D8 /* DashboardPeopleTab.swift */,
+				3D9E3818321CE657581EBDC2 /* DashboardWindow.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		89DA843BD3631F4E2659D36E /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				D8BDECCB56EFD373D354985B /* KeychainStore.swift */,
+				51B4BC53805606E0E673C85E /* SettingsStore.swift */,
+				0A874D0741542DDEAC7C74A4 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		918883581D16C5BB83BDDEEE /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				52A27E1668E53470A282F524 /* ConfettiCannonView.swift */,
+				E783C190734A044F4D11D5DE /* PermissionsOnboarding.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		A7809D5D843E80B1B0B98D85 /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				3A8571CDE2A345DFBA4D63B9 /* MediaStore.swift */,
+				7C416F65690F1F4BF23A317B /* MeetingDocumentStore.swift */,
+				7373580292D5939611ACCB4D /* MeetingStore.swift */,
+				14A88653CB16E58B08B97254 /* Models.swift */,
+				8D468CFCF3B07323F6601D6F /* SpeakerProfileStore.swift */,
+				F7ED3188298AB89CC0207CE1 /* TrackedItemStore.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		B2892BAEC66F36D3792512F8 /* Detection */ = {
+			isa = PBXGroup;
+			children = (
+				4778FAA96D8BF761FEECABB9 /* CalendarSignal.swift */,
+				FE6E3E4849B9553E0F944A56 /* MeetingAppCatalog.swift */,
+				9CF08E5AB181694924393655 /* MeetingDetector.swift */,
+				864C79DFACFEE1C17BD49859 /* MeetingWindowPicker.swift */,
+			);
+			path = Detection;
+			sourceTree = "<group>";
+		};
+		B31CB1C0975394716385ED2B /* Intelligence */ = {
+			isa = PBXGroup;
+			children = (
+				BB007E425FF4315F412548B0 /* DashboardChatStore.swift */,
+				15211A717601E5D65B5D5E95 /* DocumentTextExtractor.swift */,
+				3693EFF0B0BEC91A599D373F /* LiveAssistantEngine.swift */,
+				BEE057EE0B032D085403F3D8 /* MeetingChunker.swift */,
+				A1D4C378F0AC696AD74B30F5 /* MeetingMemoryIndexer.swift */,
+				0EB39325F05D96ED33C8A82D /* MeetingMemoryQuery.swift */,
+				67D5EE800716500240670C8E /* MeetingMemoryStore.swift */,
+				9BA10B6753304EB58A44131C /* PresenceHeuristicsScorer.swift */,
+				AB41B13BE838372D5696C6C0 /* Summarizer.swift */,
+				5EC39D00FCF6A891E7903A5D /* TrackedItemReconciler.swift */,
+			);
+			path = Intelligence;
+			sourceTree = "<group>";
+		};
+		CA8BBBE652F1AB844F1F5A0E /* Panels */ = {
+			isa = PBXGroup;
+			children = (
+				7BED0A583ADD40C278707678 /* Dashboard */,
+				7D0F7A361849C15BF7EE35F9 /* LiveAssistPanel.swift */,
+				EB0812581ED258DA87687B8A /* MeetingDocumentsSection.swift */,
+				6C6840B3B6B1A3CD5C12FFBD /* MeetingUserNotesEditor.swift */,
+				CBAF7F3710D642513A02FE47 /* RecordPromptPanel.swift */,
+				CD7CBA799AC3C99EEC8AF92B /* ReportWindow.swift */,
+				8DDF5D0FBBF75FA465CD9F45 /* TranscriptPanel.swift */,
+			);
+			path = Panels;
+			sourceTree = "<group>";
+		};
+		D80647AC60A60141592D4B46 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8DD940E5C35DE38E8E07402C /* Sauron.app */,
+				E1514F9076DF6EB2FDC42B00 /* SauronTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		DB54E70816F4AB14A758A07F /* Sauron */ = {
+			isa = PBXGroup;
+			children = (
+				3855A0A0C9AE39FC9291F7DB /* App */,
+				7220DEBEB4A5A7130999FC36 /* Capture */,
+				38444843515851E9229648BD /* Design */,
+				B2892BAEC66F36D3792512F8 /* Detection */,
+				B31CB1C0975394716385ED2B /* Intelligence */,
+				2A3144F9EA34D2851C865552 /* MCP */,
+				3D23A8711E1C13DDD4421AF3 /* MenuBar */,
+				918883581D16C5BB83BDDEEE /* Onboarding */,
+				CA8BBBE652F1AB844F1F5A0E /* Panels */,
+				A7809D5D843E80B1B0B98D85 /* Persistence */,
+				21351604C2CBAC91A1CD9A22 /* Providers */,
+				89DA843BD3631F4E2659D36E /* Settings */,
+				1E3164DFDCADAA02F329CD6A /* Transcription */,
+				CCC17F03C2466F5C4B8D60BD /* Assets.xcassets */,
+				C7769DE6ECE22495B70D803B /* SauronApp.swift */,
+			);
+			path = Sauron;
+			sourceTree = "<group>";
+		};
+		F69939E9113D087EB69C1CD7 /* SauronTests */ = {
+			isa = PBXGroup;
+			children = (
+				DAB2F533C9E9835FCE420DA7 /* SauronTests.swift */,
+			);
+			path = SauronTests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		42DFA4771E45C23069A141D5 /* SauronTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 90B78B9CEC1AAB4AB457387B /* Build configuration list for PBXNativeTarget "SauronTests" */;
+			buildPhases = (
+				945E4EC8E70D27088172505C /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7531C05214E32F5B07D656DB /* PBXTargetDependency */,
+			);
+			name = SauronTests;
+			packageProductDependencies = (
+			);
+			productName = SauronTests;
+			productReference = E1514F9076DF6EB2FDC42B00 /* SauronTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		991C47EFC7630FA8FA91C454 /* Sauron */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9BA1BA99129D929696BD768F /* Build configuration list for PBXNativeTarget "Sauron" */;
+			buildPhases = (
+				C0DF77607D314F8B7522EEC6 /* Sources */,
+				4D3A5E2C9F2DC6BC58D6D473 /* Resources */,
+				A32E6AAB0BADA3D78BB0E6A7 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Sauron;
+			packageProductDependencies = (
+				1926D9934CF11D35C75662E9 /* FluidAudio */,
+			);
+			productName = Sauron;
+			productReference = 8DD940E5C35DE38E8E07402C /* Sauron.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3BF52D2E75C79B594C2986B7 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					991C47EFC7630FA8FA91C454 = {
+						DevelopmentTeam = MZSC4FTLNA;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = B3D37A5778CAA73EA17C4B83 /* Build configuration list for PBXProject "Sauron" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 122B8A3546016ED225E38D50;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				5290611C81828139B356FB07 /* XCRemoteSwiftPackageReference "FluidAudio" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = D80647AC60A60141592D4B46 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				991C47EFC7630FA8FA91C454 /* Sauron */,
+				42DFA4771E45C23069A141D5 /* SauronTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4D3A5E2C9F2DC6BC58D6D473 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2CDB9EAD992121C3D27621D4 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		945E4EC8E70D27088172505C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B787A71F5AD18A25DC409828 /* SauronTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C0DF77607D314F8B7522EEC6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E2395AF9EF8487C495CBB377 /* AgentProviders.swift in Sources */,
+				41A46147CFD03B03B9B5D524 /* AppState.swift in Sources */,
+				6BE03660B467703C1E75EC4D /* AudioDeviceCatalog.swift in Sources */,
+				48B52484E977C0C718D19E76 /* AudioPCM.swift in Sources */,
+				676BCA749D601A0026FA6411 /* AudioSignalMonitor.swift in Sources */,
+				478DD42FA1848670C7FE4E0F /* CalendarSignal.swift in Sources */,
+				8D576191CDD25804184A6787 /* CaptureEngine.swift in Sources */,
+				7E50D2DCDA7DCC4BF17D3A22 /* ConfettiCannonView.swift in Sources */,
+				719B8D4A7F225661D78DCBAD /* DashboardAskTab.swift in Sources */,
+				FEA14FC697B5A2304E36521D /* DashboardAsksTab.swift in Sources */,
+				3788ECB5E027DE5CE1C195CB /* DashboardChatStore.swift in Sources */,
+				4EFCB1058864E87C0F01133C /* DashboardComponents.swift in Sources */,
+				0222E625B7DC1E1FE26474D2 /* DashboardHomeTab.swift in Sources */,
+				6B640DCFF5987C7C281D2D83 /* DashboardInsightsTab.swift in Sources */,
+				1CFB9E7E7C62E1069EFE9C9B /* DashboardLibraryTab.swift in Sources */,
+				B9813C397D1F2D27B50B4801 /* DashboardMemoryTab.swift in Sources */,
+				095753BC13A0C8EDADA26E93 /* DashboardPeopleTab.swift in Sources */,
+				E2F8F569B20DA0A2CC1C518A /* DashboardWindow.swift in Sources */,
+				2D542DFDD639F5A0E8E7EE02 /* DocumentTextExtractor.swift in Sources */,
+				F811916A1F2CCE0B89E7B2EE /* FluidAudioModelStore.swift in Sources */,
+				D3A4AF242B3DD46E4FEF7AD8 /* GlassPanel.swift in Sources */,
+				60BC145F8539FE48885A2C26 /* GlobalHotkeyMonitor.swift in Sources */,
+				79AE9AD58429C2674124C6F8 /* HermesMCPInstaller.swift in Sources */,
+				DA581BE6D3AFC6EDCC26F0B6 /* KeychainStore.swift in Sources */,
+				5BD901FD3163A1AA7284CAAA /* LLMClient.swift in Sources */,
+				2328BEF8DFF38C86AE90AB8A /* LMStudio.swift in Sources */,
+				FA9A261795F6D11F075517C1 /* LiquidGlassScrollChrome.swift in Sources */,
+				3DBD990DCB65ECD9279DECE6 /* LiveAssistPanel.swift in Sources */,
+				938F45286595FD935129C07F /* LiveAssistantEngine.swift in Sources */,
+				233C6C7ADB41CE31419415B6 /* MCPProtocol.swift in Sources */,
+				9302BEFF04C3BAB3B32B7287 /* MediaCompose.swift in Sources */,
+				21B0179880B7C52825D1E6FA /* MediaStore.swift in Sources */,
+				320DE19D893B3B9E8369A5D8 /* MediaWriter.swift in Sources */,
+				962F05DF755668BA3EEC3171 /* MeetingAppCatalog.swift in Sources */,
+				4EB290509FE3EB0FC43756BB /* MeetingChunker.swift in Sources */,
+				BB00336728F7CE3F2587E9CA /* MeetingDetector.swift in Sources */,
+				B204E2EE1444E772AA1A1923 /* MeetingDiarizing.swift in Sources */,
+				B9A708ABC335BA51413B3C3D /* MeetingDocumentStore.swift in Sources */,
+				9D83194945381FE9D5E45551 /* MeetingDocumentsSection.swift in Sources */,
+				55522DB8F28D32DAD5AC3EEA /* MeetingMemoryIndexer.swift in Sources */,
+				75E9E770FB410534CE5EAC05 /* MeetingMemoryQuery.swift in Sources */,
+				316358BCA65B784B929ED2A4 /* MeetingMemoryStore.swift in Sources */,
+				D5141986501AA79B0368BAD6 /* MeetingStore.swift in Sources */,
+				0D788E2C8E025A6EF560FF73 /* MeetingUserNotesEditor.swift in Sources */,
+				55D27F05526685B7D319C352 /* MeetingWindowPicker.swift in Sources */,
+				902B164FE761C1B472AD6887 /* MemoryMCPHandlers.swift in Sources */,
+				D8E5D42A037FEB0AB56D6137 /* MemoryMCPServer.swift in Sources */,
+				2D57B0B1BA6116573481CE52 /* MenuBarView.swift in Sources */,
+				028E0F868611E2ABEE38B706 /* Models.swift in Sources */,
+				691DC3AACC62C23347267954 /* NeuralMeetingDiarizer.swift in Sources */,
+				B43F95A164C7BCB455115C43 /* Ollama.swift in Sources */,
+				CAB9D2C7AB2CC7850E2B5482 /* OpenRouter.swift in Sources */,
+				92B56E8FA4E31A570B8C9EFB /* ParakeetRetranscriber.swift in Sources */,
+				3A4301ED89861A943183E4CC /* PermissionProbe.swift in Sources */,
+				9DEFB6C5796126A906E33269 /* PermissionsOnboarding.swift in Sources */,
+				1C84A7E8CB849EB7FB5DCFEC /* PresenceHeuristicsScorer.swift in Sources */,
+				74FF7540E7272C0A81EF7558 /* PromptAlert.swift in Sources */,
+				52FEE8ABF3FF182E456775EE /* ReactiveWaveformLine.swift in Sources */,
+				B8ED2A43E45E2E57C25CE40A /* RecordPromptPanel.swift in Sources */,
+				CD98F6566875DBFA6F622FF8 /* RecordingAmbientBackground.swift in Sources */,
+				BF2581954DE70D184D135BAD /* ReportWindow.swift in Sources */,
+				4DDD7DB4D9DEB8DF80A2344C /* SauronApp.swift in Sources */,
+				5FC2CEDAB8BA30675FFEE5A4 /* ScreenCaptureAccess.swift in Sources */,
+				C7D2BFA242EBA6DA302CB1E2 /* SettingsStore.swift in Sources */,
+				37FF9A2A504FCE82E6FD1C49 /* SettingsView.swift in Sources */,
+				9CFCF19D86BF1CDA860DC809 /* SpeakerDiarizer.swift in Sources */,
+				53BC8C458F5F360F2F416F6C /* SpeakerProfileStore.swift in Sources */,
+				CA64CFEA0C8C677401050351 /* Summarizer.swift in Sources */,
+				857E146A1920916744973A5D /* TavilyClient.swift in Sources */,
+				1A53169C96BFF6627ED6684D /* Theme.swift in Sources */,
+				542A047834E55B221940B742 /* TrackedItemReconciler.swift in Sources */,
+				CB2091EAA0037AD68D1364BC /* TrackedItemStore.swift in Sources */,
+				77B862579BF821B2AA6CD307 /* TranscriptPanel.swift in Sources */,
+				CC2B57ED42DCF83E84FC1B74 /* TranscriptionEngine.swift in Sources */,
+				0662F8AD7507B1A31878B4A8 /* Types.swift in Sources */,
+				58011291A9A02C7FFAA8B44F /* WindowOpener.swift in Sources */,
+				002D509ABF6E4A4EC6A5CEC1 /* WindowShareAccess.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7531C05214E32F5B07D656DB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 991C47EFC7630FA8FA91C454 /* Sauron */;
+			targetProxy = 15B0706ED5A00714ABA30446 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		09DEF9B3B92F84FFA58F3F41 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Sauron/Sauron.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = MZSC4FTLNA;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sauron/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Sauron;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHighResolutionCapable = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.Sauron;
+				PRODUCT_NAME = Sauron;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+			};
+			name = Debug;
+		};
+		351748E291C384821D310C37 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Sauron/Sauron.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = MZSC4FTLNA;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sauron/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Sauron;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHighResolutionCapable = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.Sauron;
+				PRODUCT_NAME = Sauron;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+			};
+			name = Release;
+		};
+		70B119BF5031FECD76EBDA0D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		A270BEC237B734915762E7A3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.SauronTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Sauron.app/Contents/MacOS/Sauron";
+			};
+			name = Release;
+		};
+		BB0ACC64B97C4A2631F6EF0E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.SauronTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Sauron.app/Contents/MacOS/Sauron";
+			};
+			name = Debug;
+		};
+		C1CE24AA54BBBA8DEE4AC45B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		90B78B9CEC1AAB4AB457387B /* Build configuration list for PBXNativeTarget "SauronTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB0ACC64B97C4A2631F6EF0E /* Debug */,
+				A270BEC237B734915762E7A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9BA1BA99129D929696BD768F /* Build configuration list for PBXNativeTarget "Sauron" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				09DEF9B3B92F84FFA58F3F41 /* Debug */,
+				351748E291C384821D310C37 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B3D37A5778CAA73EA17C4B83 /* Build configuration list for PBXProject "Sauron" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C1CE24AA54BBBA8DEE4AC45B /* Debug */,
+				70B119BF5031FECD76EBDA0D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5290611C81828139B356FB07 /* XCRemoteSwiftPackageReference "FluidAudio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/FluidInference/FluidAudio.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.15.7;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1926D9934CF11D35C75662E9 /* FluidAudio */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5290611C81828139B356FB07 /* XCRemoteSwiftPackageReference "FluidAudio" */;
+			productName = FluidAudio;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 3BF52D2E75C79B594C2986B7 /* Project object */;
+}

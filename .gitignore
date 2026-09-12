@@ -1,5 +1,7 @@
 .DS_Store
 DerivedData/
+DerivedDataRelease/
+dist/
 build/
 *.xcuserstate
 xcuserdata/
@@ -16,3 +18,5 @@ xcuserdata/
 .env.*
 Observer.xcodeproj/xcuserdata/
 Observer.xcodeproj/project.xcworkspace/xcuserdata/
+Sauron.xcodeproj/xcuserdata/
+Sauron.xcodeproj/project.xcworkspace/xcuserdata/

@@ -1,11 +1,15 @@
-name: Observer
+name: Sauron
 options:
-  bundleIdPrefix: app.observer
+  bundleIdPrefix: app.sauron
   deploymentTarget:
     macOS: "26.0"
   createIntermediateGroups: true
   groupSortPosition: top
   developmentLanguage: en
+packages:
+  FluidAudio:
+    url: https://github.com/FluidInference/FluidAudio.git
+    from: 0.15.7
 settings:
   base:
     MACOSX_DEPLOYMENT_TARGET: "26.0"
@@ -14,27 +18,27 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     CLANG_ENABLE_MODULES: YES
 targets:
-  Observer:
+  Sauron:
     type: application
     platform: macOS
     sources:
-      - path: Observer
+      - path: Sauron
         excludes:
           - Info.plist
-          - Observer.entitlements
+          - Sauron.entitlements
     settings:
       base:
-        PRODUCT_NAME: Observer
-        PRODUCT_BUNDLE_IDENTIFIER: app.observer.Observer
+        PRODUCT_NAME: Sauron
+        PRODUCT_BUNDLE_IDENTIFIER: app.sauron.Sauron
         MARKETING_VERSION: 0.1.0
         CURRENT_PROJECT_VERSION: 1
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_FILE: Observer/Info.plist
-        INFOPLIST_KEY_CFBundleDisplayName: Observer
+        INFOPLIST_FILE: Sauron/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Sauron
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_LSUIElement: YES
         INFOPLIST_KEY_NSHighResolutionCapable: YES
-        CODE_SIGN_ENTITLEMENTS: Observer/Observer.entitlements
+        CODE_SIGN_ENTITLEMENTS: Sauron/Sauron.entitlements
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: Apple Development
         DEVELOPMENT_TEAM: MZSC4FTLNA
@@ -57,27 +61,29 @@ targets:
       - sdk: SwiftData.framework
       - sdk: Charts.framework
       - sdk: PDFKit.framework
+      - package: FluidAudio
+        product: FluidAudio
     scheme:
       testTargets:
-        - ObserverTests
-  ObserverTests:
+        - SauronTests
+  SauronTests:
     type: bundle.unit-test
     platform: macOS
     sources:
-      - ObserverTests
+      - SauronTests
     dependencies:
-      - target: Observer
+      - target: Sauron
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: app.observer.ObserverTests
+        PRODUCT_BUNDLE_IDENTIFIER: app.sauron.SauronTests
         GENERATE_INFOPLIST_FILE: YES
         MACOSX_DEPLOYMENT_TARGET: "26.0"
 schemes:
-  Observer:
+  Sauron:
     build:
       targets:
-        Observer: all
-        ObserverTests: [test]
+        Sauron: all
+        SauronTests: [test]
     run:
       config: Debug
       commandLineArguments:
@@ -85,4 +91,4 @@ schemes:
     test:
       config: Debug
       targets:
-        - ObserverTests
+        - SauronTests
