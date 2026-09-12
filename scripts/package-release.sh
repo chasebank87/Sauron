@@ -19,14 +19,27 @@ echo "==> Generating Xcode project"
 xcodegen generate
 
 echo "==> Building Release ${APP_NAME} ${VERSION}"
+SIGN_IDENTITY="${CODE_SIGN_IDENTITY:-Apple Development}"
+SIGN_ARGS=(
+  CODE_SIGN_IDENTITY="${SIGN_IDENTITY}"
+  DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-MZSC4FTLNA}"
+)
+# Developer ID + Automatic signing conflict; force Manual for distribution builds.
+# Also require secure timestamp and strip get-task-allow for notarization.
+if [[ "${SIGN_IDENTITY}" == Developer\ ID\ Application:* ]]; then
+  SIGN_ARGS+=(
+    CODE_SIGN_STYLE=Manual
+    CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO
+    OTHER_CODE_SIGN_FLAGS=--timestamp
+  )
+fi
 xcodebuild \
   -scheme Sauron \
   -configuration Release \
   -derivedDataPath "$DERIVED" \
   -destination 'platform=macOS' \
   build \
-  CODE_SIGN_IDENTITY="${CODE_SIGN_IDENTITY:-Apple Development}" \
-  DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-MZSC4FTLNA}"
+  "${SIGN_ARGS[@]}"
 
 APP_PATH="${DERIVED}/Build/Products/Release/${APP_NAME}.app"
 if [[ ! -d "$APP_PATH" ]]; then
