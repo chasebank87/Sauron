@@ -5,6 +5,7 @@ struct MenuBarView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -22,7 +23,14 @@ struct MenuBarView: View {
         }
         .onChange(of: appState.reportToken) { _, token in
             if token != nil {
+                dismissMenuBar()
                 openWindow(id: "report")
+            }
+        }
+        .onChange(of: appState.dashboardToken) { _, token in
+            if token != nil {
+                dismissMenuBar()
+                openWindow(id: "dashboard")
             }
         }
     }
@@ -50,6 +58,16 @@ struct MenuBarView: View {
 
     private var actions: some View {
         VStack(spacing: 8) {
+            Button {
+                dismissMenuBar()
+                appState.openDashboard()
+                openWindow(id: "dashboard")
+            } label: {
+                Label("Open Dashboard", systemImage: "square.grid.2x2")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .observerGlassButton()
+
             Button {
                 appState.simulateMeeting()
             } label: {
@@ -80,6 +98,7 @@ struct MenuBarView: View {
             } else {
                 ForEach(Array(items.prefix(8))) { meeting in
                     Button {
+                        dismissMenuBar()
                         appState.openReport(meeting)
                         openWindow(id: "report")
                     } label: {
@@ -104,15 +123,31 @@ struct MenuBarView: View {
     private var footer: some View {
         HStack {
             Button("Settings") {
-                NSApp.activate(ignoringOtherApps: true)
-                openSettings()
+                dismissMenuBar()
+                DispatchQueue.main.async {
+                    NSApp.activate(ignoringOtherApps: true)
+                    openSettings()
+                }
             }
             .observerGlassButton()
             Spacer()
             Button("Quit Observer") {
+                dismissMenuBar()
                 NSApp.terminate(nil)
             }
             .observerGlassButton()
+        }
+    }
+
+    /// Close the MenuBarExtra popover before opening another window.
+    private func dismissMenuBar() {
+        dismiss()
+        // `.menuBarExtraStyle(.window)` often ignores Environment dismiss — close it by class.
+        for window in NSApp.windows {
+            let name = NSStringFromClass(type(of: window))
+            if name.contains("MenuBarExtra") || name.contains("StatusItem") {
+                window.orderOut(nil)
+            }
         }
     }
 

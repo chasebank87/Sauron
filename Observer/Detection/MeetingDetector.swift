@@ -4,20 +4,48 @@ import Foundation
 import ScreenCaptureKit
 
 enum RecordedMeetingWatch {
-    /// Seconds the watched meeting window must stay gone before we auto-stop.
-    static let endGrace: TimeInterval = 4
+    /// Seconds without any continuing meeting window before we auto-stop.
+    /// Window IDs churn during screen share / layout changes — keep this generous.
+    static let endGrace: TimeInterval = 12
 
-    /// Only the original meeting window/session counts — leftover Zoom/Teams home UI must not keep recording alive.
+    /// Exact original window/session still visible.
     static func isPresent(
         sessionKey: String,
         windowID: UInt32?,
         in matches: [MeetingCandidate]
     ) -> Bool {
-        matches.contains { match in
-            if match.sessionKey == sessionKey { return true }
-            if let windowID, match.windowID == windowID { return true }
-            return false
+        continuingMatch(
+            sessionKey: sessionKey,
+            windowID: windowID,
+            bundleIdentifier: nil,
+            kind: nil,
+            in: matches
+        ) != nil
+    }
+
+    /// Prefer the original window; otherwise another catalog-matched window of the
+    /// same meeting app (Zoom/Teams often replace window IDs mid-call). Home/chrome
+    /// windows are already filtered out by `MeetingAppCatalog`, so same-app matches
+    /// are treated as the call continuing — not as a reason to keep recording forever
+    /// after hang-up (hang-up leaves no catalog match).
+    static func continuingMatch(
+        sessionKey: String,
+        windowID: UInt32?,
+        bundleIdentifier: String?,
+        kind: MeetingKind?,
+        in matches: [MeetingCandidate]
+    ) -> MeetingCandidate? {
+        if let exact = matches.first(where: { $0.sessionKey == sessionKey }) {
+            return exact
         }
+        if let windowID, let exact = matches.first(where: { $0.windowID == windowID }) {
+            return exact
+        }
+        guard let bundleIdentifier, let kind else { return nil }
+        let peers = matches.filter {
+            $0.bundleIdentifier == bundleIdentifier && $0.kind == kind
+        }
+        return MeetingWindowPicker.best(from: peers)
     }
 }
 
@@ -37,10 +65,15 @@ final class MeetingDetector {
     private var recordingMissingSince: Date?
     private var expiredPromptSessionKey: String?
 
-    private let pollInterval: Duration = .seconds(2)
-    private let stability: TimeInterval = 8
+    private let pollInterval: Duration = .milliseconds(750)
+    /// How long a catalog-matched window must stay visible before prompting.
+    /// Short enough to feel instant; long enough to ignore launch flicker.
+    private let stability: TimeInterval = 1.25
     private let disappearance: TimeInterval = 15
-    private let recordingPollInterval: Duration = .seconds(1)
+    private let recordingPollInterval: Duration = .milliseconds(750)
+
+    /// Returns subscribed calendar IDs (`nil` = all). Wired from Settings via AppState.
+    var subscribedCalendarIDsProvider: (() -> [String]?)?
 
     func start() {
         guard task == nil else { return }
@@ -145,23 +178,29 @@ final class MeetingDetector {
                 }
             }
 
-            for match in matches {
-                missingSince[match.sessionKey] = nil
-                if snoozedSessions.contains(match.sessionKey) { continue }
-                if let until = mutedBundlesUntil[match.bundleIdentifier], until > Date() { continue }
-
+            let eligible = matches.filter { match in
+                if snoozedSessions.contains(match.sessionKey) { return false }
+                if let until = mutedBundlesUntil[match.bundleIdentifier], until > Date() { return false }
                 if stableSince[match.sessionKey] == nil {
                     stableSince[match.sessionKey] = Date()
                 }
-                if let started = stableSince[match.sessionKey],
-                   Date().timeIntervalSince(started) >= stability {
-                    var resolved = match
-                    if let calendar = CalendarSignal.currentMeeting() {
-                        resolved.calendarEventTitle = calendar.title
-                    }
-                    candidate = resolved
-                    return
+                guard let started = stableSince[match.sessionKey] else { return false }
+                return Date().timeIntervalSince(started) >= stability
+            }
+
+            for match in matches {
+                missingSince[match.sessionKey] = nil
+            }
+
+            if let best = MeetingWindowPicker.best(from: eligible) {
+                var resolved = best
+                if let calendar = CalendarSignal.currentMeeting(
+                    subscribedCalendarIDs: subscribedCalendarIDsProvider?()
+                ) {
+                    resolved.calendarEventTitle = calendar.title
                 }
+                candidate = resolved
+                return
             }
         } catch {
             lastError = error.localizedDescription
@@ -170,12 +209,18 @@ final class MeetingDetector {
 
     private func updateRecordingWatch(matches: [MeetingCandidate]) {
         guard let watch = recordingWatch, !recordedMeetingEnded else { return }
-        if RecordedMeetingWatch.isPresent(
+        if let continuing = RecordedMeetingWatch.continuingMatch(
             sessionKey: watch.sessionKey,
             windowID: watch.windowID,
+            bundleIdentifier: watch.bundleIdentifier,
+            kind: watch.kind,
             in: matches
         ) {
             recordingMissingSince = nil
+            // Retarget when Zoom/Teams swaps the live window mid-call.
+            if continuing.sessionKey != watch.sessionKey {
+                recordingWatch = continuing
+            }
             return
         }
         let started = recordingMissingSince ?? Date()
@@ -207,7 +252,8 @@ final class MeetingDetector {
             windowTitle: title,
             windowID: window.windowID,
             isSimulated: false,
-            calendarEventTitle: nil
+            calendarEventTitle: nil,
+            pixelArea: max(frame.width, 1) * max(frame.height, 1)
         )
     }
 

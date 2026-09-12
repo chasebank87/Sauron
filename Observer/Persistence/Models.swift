@@ -3,13 +3,28 @@ import SwiftData
 
 enum SharedModel {
     static let container: ModelContainer = {
-        let schema = Schema([Meeting.self, TranscriptSegment.self])
+        let schema = Schema([
+            Meeting.self,
+            TranscriptSegment.self,
+            SpeakerProfile.self,
+            TrackedItem.self
+        ])
         let storeURL = MediaStore.applicationSupport.appending(path: "Observer.store")
         let configuration = ModelConfiguration(schema: schema, url: storeURL)
         do {
             return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
-            fatalError("Failed to create Observer store: \(error)")
+            // Early 0.1.x: schema changes are not migrated — reset the store once.
+            try? FileManager.default.removeItem(at: storeURL)
+            let sidecar = storeURL.deletingPathExtension().appendingPathExtension("store-shm")
+            let wal = storeURL.deletingPathExtension().appendingPathExtension("store-wal")
+            try? FileManager.default.removeItem(at: sidecar)
+            try? FileManager.default.removeItem(at: wal)
+            do {
+                return try ModelContainer(for: schema, configurations: [configuration])
+            } catch {
+                fatalError("Failed to create Observer store: \(error)")
+            }
         }
     }()
 }
@@ -32,6 +47,9 @@ final class Meeting {
     var systemAudioPath: String?
     var mixedAudioPath: String?
     var summaryJSON: String?
+    var assistCardsJSON: String?
+    var memoryCitationsJSON: String?
+    var memoryIndexedAt: Date?
     var statusRaw: String
 
     @Relationship(deleteRule: .cascade, inverse: \TranscriptSegment.meeting)
@@ -79,13 +97,49 @@ final class Meeting {
     var plainTranscript: String {
         segments
             .sorted { $0.start < $1.start }
-            .map { "\($0.speaker.displayName): \($0.text)" }
+            .map { "\(SpeakerKey.fallbackDisplayName($0.speakerKey)): \($0.text)" }
+            .joined(separator: "\n")
+    }
+
+    @MainActor
+    var namedTranscript: String {
+        segments
+            .sorted { $0.start < $1.start }
+            .map { "\(SpeakerProfileStore.shared.displayName(for: $0.speakerKey)): \($0.text)" }
             .joined(separator: "\n")
     }
 
     var summary: MeetingSummary? {
         guard let summaryJSON, let data = summaryJSON.data(using: .utf8) else { return nil }
         return try? JSONDecoder().decode(MeetingSummary.self, from: data)
+    }
+
+    var assistCards: [LiveAssistCard] {
+        get {
+            guard let assistCardsJSON, let data = assistCardsJSON.data(using: .utf8) else { return [] }
+            return (try? JSONDecoder().decode([LiveAssistCard].self, from: data)) ?? []
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                assistCardsJSON = String(data: data, encoding: .utf8)
+            } else {
+                assistCardsJSON = nil
+            }
+        }
+    }
+
+    var memoryCitations: [MemoryCitation] {
+        get {
+            guard let memoryCitationsJSON, let data = memoryCitationsJSON.data(using: .utf8) else { return [] }
+            return (try? JSONDecoder().decode([MemoryCitation].self, from: data)) ?? []
+        }
+        set {
+            if newValue.isEmpty {
+                memoryCitationsJSON = nil
+            } else if let data = try? JSONEncoder().encode(newValue) {
+                memoryCitationsJSON = String(data: data, encoding: .utf8)
+            }
+        }
     }
 
     var playableVideoURL: URL? { existingMediaURL(videoPath) }
@@ -131,7 +185,7 @@ final class TranscriptSegment {
         id: UUID = UUID(),
         start: TimeInterval,
         end: TimeInterval,
-        speaker: Speaker,
+        speakerKey: String,
         text: String,
         isFinal: Bool,
         meeting: Meeting? = nil
@@ -139,13 +193,158 @@ final class TranscriptSegment {
         self.id = id
         self.start = start
         self.end = end
-        self.speakerRaw = speaker.rawValue
+        self.speakerRaw = SpeakerKey.normalize(speakerKey)
         self.text = text
         self.isFinal = isFinal
         self.meeting = meeting
     }
 
-    var speaker: Speaker {
-        Speaker(rawValue: speakerRaw) ?? .others
+    var speakerKey: String {
+        get { SpeakerKey.normalize(speakerRaw) }
+        set { speakerRaw = SpeakerKey.normalize(newValue) }
+    }
+
+    var isSelf: Bool { SpeakerKey.isSelf(speakerKey) }
+}
+
+@Model
+final class SpeakerProfile {
+    @Attribute(.unique) var id: UUID
+    var name: String
+    var isSelf: Bool
+    var sortIndex: Int
+    var accentRaw: String?
+    var voiceprintJSON: String?
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        isSelf: Bool = false,
+        sortIndex: Int = 0,
+        accentRaw: String? = nil,
+        voiceprintJSON: String? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.isSelf = isSelf
+        self.sortIndex = sortIndex
+        self.accentRaw = accentRaw
+        self.voiceprintJSON = voiceprintJSON
+    }
+
+    var speakerKey: String {
+        isSelf ? SpeakerKey.selfKey : SpeakerKey.profile(id)
+    }
+
+    var voiceprint: [Float] {
+        get {
+            guard let voiceprintJSON, let data = voiceprintJSON.data(using: .utf8),
+                  let values = try? JSONDecoder().decode([Float].self, from: data)
+            else { return [] }
+            return values
+        }
+        set {
+            if newValue.isEmpty {
+                voiceprintJSON = nil
+            } else if let data = try? JSONEncoder().encode(newValue) {
+                voiceprintJSON = String(data: data, encoding: .utf8)
+            }
+        }
+    }
+}
+
+enum TrackedItemKind: String, Codable, Sendable, CaseIterable {
+    case action
+    case ask
+    case blocker
+    case nextStep
+
+    var title: String {
+        switch self {
+        case .action: "Action"
+        case .ask: "Ask"
+        case .blocker: "Blocker"
+        case .nextStep: "Next step"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .action: "checklist"
+        case .ask: "questionmark.circle"
+        case .blocker: "exclamationmark.triangle"
+        case .nextStep: "arrow.right.circle"
+        }
+    }
+}
+
+enum TrackedItemStatus: String, Codable, Sendable {
+    case open
+    case done
+    case dismissed
+}
+
+enum TrackedItemCompletedBy: String, Codable, Sendable {
+    case manual
+    case auto
+}
+
+@Model
+final class TrackedItem {
+    @Attribute(.unique) var id: UUID
+    var kindRaw: String
+    var text: String
+    var owner: String?
+    var dueRaw: String?
+    var statusRaw: String
+    var sourceMeetingID: UUID
+    var sourceMeetingTitle: String
+    var createdAt: Date
+    var completedAt: Date?
+    var completedByRaw: String?
+    var resolvedInMeetingID: UUID?
+    var resolutionNote: String?
+    var fingerprint: String
+
+    init(
+        id: UUID = UUID(),
+        kind: TrackedItemKind,
+        text: String,
+        owner: String? = nil,
+        dueRaw: String? = nil,
+        status: TrackedItemStatus = .open,
+        sourceMeetingID: UUID,
+        sourceMeetingTitle: String,
+        createdAt: Date = .now,
+        fingerprint: String
+    ) {
+        self.id = id
+        self.kindRaw = kind.rawValue
+        self.text = text
+        self.owner = owner
+        self.dueRaw = dueRaw
+        self.statusRaw = status.rawValue
+        self.sourceMeetingID = sourceMeetingID
+        self.sourceMeetingTitle = sourceMeetingTitle
+        self.createdAt = createdAt
+        self.fingerprint = fingerprint
+    }
+
+    var kind: TrackedItemKind {
+        get { TrackedItemKind(rawValue: kindRaw) ?? .action }
+        set { kindRaw = newValue.rawValue }
+    }
+
+    var status: TrackedItemStatus {
+        get { TrackedItemStatus(rawValue: statusRaw) ?? .open }
+        set { statusRaw = newValue.rawValue }
+    }
+
+    var completedBy: TrackedItemCompletedBy? {
+        get {
+            guard let completedByRaw else { return nil }
+            return TrackedItemCompletedBy(rawValue: completedByRaw)
+        }
+        set { completedByRaw = newValue?.rawValue }
     }
 }

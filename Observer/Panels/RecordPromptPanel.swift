@@ -2,12 +2,31 @@ import SwiftUI
 
 struct RecordPromptView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.colorScheme) private var colorScheme
+    var alertEnabled: Bool = true
+    @State private var appeared = false
+    @State private var pulse = false
 
     var body: some View {
         @Bindable var appState = appState
         let candidate = appState.candidate ?? .simulated()
         VStack(spacing: 0) {
             VStack(spacing: 6) {
+                ZStack {
+                    if alertEnabled {
+                        Circle()
+                            .stroke(ObserverTheme.accent.opacity(0.35), lineWidth: 2)
+                            .frame(width: 36, height: 36)
+                            .scaleEffect(pulse ? 1.55 : 0.85)
+                            .opacity(pulse ? 0 : 0.7)
+                        Image(systemName: "eye.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(ObserverTheme.accentGradient)
+                            .symbolEffect(.bounce, value: appeared)
+                    }
+                }
+                .frame(height: alertEnabled ? 40 : 0)
+
                 Text("Meeting detected")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
@@ -30,6 +49,8 @@ struct RecordPromptView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
+            .opacity(appeared || !alertEnabled ? 1 : 0)
+            .offset(y: appeared || !alertEnabled ? 0 : -8)
 
             HStack(spacing: 12) {
                 ForEach(CaptureMedia.allCases) { media in
@@ -64,7 +85,7 @@ struct RecordPromptView: View {
             .padding(.top, 10)
 
             Divider()
-                .overlay(Color.white.opacity(0.08))
+                .overlay(ObserverTheme.hairline(for: colorScheme))
                 .padding(.top, 18)
                 .padding(.bottom, 14)
 
@@ -83,10 +104,23 @@ struct RecordPromptView: View {
         }
         .padding(24)
         .frame(width: GlassChrome.promptSize.width, height: GlassChrome.promptSize.height)
+        .onAppear {
+            guard alertEnabled else {
+                appeared = true
+                return
+            }
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) {
+                appeared = true
+            }
+            withAnimation(.easeOut(duration: 0.85).repeatCount(2, autoreverses: false)) {
+                pulse = true
+            }
+        }
     }
 }
 
 private struct CaptureMediaCard: View {
+    @Environment(\.colorScheme) private var colorScheme
     let media: CaptureMedia
     let isSelected: Bool
     let action: () -> Void
@@ -115,10 +149,12 @@ private struct CaptureMediaCard: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background {
                 RoundedRectangle(cornerRadius: cardRadius, style: .continuous)
-                    .fill(isSelected ? ObserverTheme.accent.opacity(0.10) : Color.white.opacity(0.028))
+                    .fill(isSelected
+                          ? ObserverTheme.accent.opacity(0.10)
+                          : ObserverTheme.fillQuiet(for: colorScheme))
                 RoundedRectangle(cornerRadius: cardRadius, style: .continuous)
                     .strokeBorder(
-                        isSelected ? ObserverTheme.accent : Color.white.opacity(0.09),
+                        isSelected ? ObserverTheme.accent : ObserverTheme.hairline(for: colorScheme),
                         lineWidth: isSelected ? 1.5 : 1
                     )
             }
@@ -143,6 +179,7 @@ private struct TranscriptSettingRow: View {
 }
 
 private struct PromptSettingRow: View {
+    @Environment(\.colorScheme) private var colorScheme
     let title: String
     let detail: String
     @Binding var isOn: Bool
@@ -168,7 +205,7 @@ private struct PromptSettingRow: View {
         .padding(.vertical, 11)
         .background {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.white.opacity(0.04))
+                .fill(ObserverTheme.fillSubtle(for: colorScheme))
         }
         .accessibilityElement(children: .combine)
     }
@@ -176,6 +213,7 @@ private struct PromptSettingRow: View {
 
 struct TranscriptPanelView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.colorScheme) private var colorScheme
 
     private var showsAmbient: Bool {
         appState.status == .recording
@@ -187,7 +225,7 @@ struct TranscriptPanelView: View {
                 RecordingAmbientBackground()
             } else {
                 RoundedRectangle(cornerRadius: ObserverTheme.cardRadius, style: .continuous)
-                    .fill(Color.black.opacity(0.55))
+                    .fill(ObserverTheme.panelFallback(for: colorScheme))
             }
 
             VStack(alignment: .leading, spacing: 12) {
@@ -206,7 +244,7 @@ struct TranscriptPanelView: View {
                     }
                 }
 
-                AudioSourceMeters(
+                CombinedAudioPresence(
                     monitor: appState.audioMonitor,
                     micLabel: appState.activeMicDisplayName
                 )
@@ -234,7 +272,7 @@ struct TranscriptPanelView: View {
 
                 ScrollViewReader { proxy in
                     ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 10) {
+                        LazyVStack(alignment: .leading, spacing: 12) {
                             if appState.liveSegments.isEmpty {
                                 Text(appState.currentMeeting?.recordTranscript == true
                                      ? "Listening…"
@@ -248,7 +286,11 @@ struct TranscriptPanelView: View {
                                     .id(segment.id)
                             }
                         }
+                        // Keep "You" bubbles clear of the faint overlay scroller.
+                        .padding(.trailing, 8)
                     }
+                    .contentMargins(.trailing, 2, for: .scrollContent)
+                    .observerLiquidGlassScroll()
                     .onChange(of: appState.liveSegments.last?.text) { _, _ in
                         if let id = appState.liveSegments.last?.id {
                             withAnimation(.easeOut(duration: 0.2)) {
@@ -275,7 +317,10 @@ struct TranscriptPanelView: View {
         .clipShape(RoundedRectangle(cornerRadius: ObserverTheme.cardRadius, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: ObserverTheme.cardRadius, style: .continuous)
-                .strokeBorder(Color.white.opacity(showsAmbient ? 0.14 : 0.08), lineWidth: 1)
+                .strokeBorder(
+                    ObserverTheme.stroke(for: colorScheme, emphasized: showsAmbient),
+                    lineWidth: 1
+                )
         }
         .frame(width: GlassChrome.transcriptSize.width, height: GlassChrome.transcriptSize.height)
     }
@@ -293,56 +338,61 @@ struct TranscriptPanelView: View {
     }
 }
 
-private struct AudioSourceMeters: View {
+private struct CombinedAudioPresence: View {
+    @Environment(\.colorScheme) private var colorScheme
     let monitor: AudioSignalMonitor
     var micLabel: String = AudioSignalSource.microphone.shortTitle
 
     var body: some View {
-        VStack(spacing: 8) {
-            AudioLevelRow(
-                title: micLabel,
-                level: monitor.micLevel,
-                isSilent: monitor.micSilent
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text("Audio")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(monitor.anySilent ? Color.orange : Color.secondary)
+                Spacer(minLength: 0)
+                sourceChip(
+                    title: micLabel,
+                    active: monitor.micLevel > 0.03,
+                    silent: monitor.micSilent
+                )
+                sourceChip(
+                    title: monitor.remoteSource.liveLabel,
+                    active: monitor.remoteLevel > 0.03,
+                    silent: monitor.remoteSilent
+                )
+            }
+
+            ReactiveWaveformLine(
+                level: Double(monitor.combinedLevel),
+                isAlert: monitor.anySilent
             )
-            AudioLevelRow(
-                title: monitor.remoteSource.liveLabel,
-                level: monitor.remoteLevel,
-                isSilent: monitor.remoteSilent
-            )
+            .frame(height: 48)
+            .accessibilityLabel("Combined audio level")
+            .accessibilityValue(monitor.anySilent
+                                ? "Silent"
+                                : "\(Int(monitor.combinedLevel * 100)) percent")
         }
-        .padding(10)
+        .padding(12)
         .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.white.opacity(0.04))
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(ObserverTheme.fillSubtle(for: colorScheme))
         }
     }
-}
 
-private struct AudioLevelRow: View {
-    let title: String
-    let level: Float
-    let isSilent: Bool
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(isSilent ? Color.orange : Color.secondary)
-                .lineLimit(1)
-                .frame(width: 120, alignment: .leading)
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.white.opacity(0.08))
-                    Capsule()
-                        .fill(isSilent ? Color.orange.opacity(0.85) : ObserverTheme.accent)
-                        .frame(width: max(4, geo.size.width * CGFloat(min(max(level, 0), 1))))
-                }
+    private func sourceChip(title: String, active: Bool, silent: Bool) -> some View {
+        Text(title)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(silent ? Color.orange : (active ? Color.primary : Color.secondary))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background {
+                Capsule()
+                    .fill(silent
+                          ? Color.orange.opacity(0.14)
+                          : (active
+                             ? ObserverTheme.accent.opacity(0.14)
+                             : ObserverTheme.fillQuiet(for: colorScheme)))
             }
-            .frame(height: 6)
-        }
-        .accessibilityLabel("\(title) level")
-        .accessibilityValue(isSilent ? "Silent" : "\(Int(level * 100)) percent")
     }
 }
 
@@ -374,18 +424,51 @@ private struct SilenceWarningBanner: View {
 }
 
 struct TranscriptRow: View {
+    @Environment(\.colorScheme) private var colorScheme
     let segment: LiveSegment
 
+    private var isYou: Bool { segment.isSelf }
+    private var displayName: String {
+        SpeakerProfileStore.shared.displayName(for: segment.speakerKey)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(segment.speaker.displayName)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(segment.speaker == .you ? Color.accentColor : Color.secondary)
-            Text(segment.text)
-                .font(.callout)
-                .foregroundStyle(segment.isFinal ? Color.primary : Color.secondary)
+        HStack(alignment: .bottom, spacing: 0) {
+            if isYou { Spacer(minLength: 36) }
+
+            VStack(alignment: isYou ? .trailing : .leading, spacing: 4) {
+                Text(displayName)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(isYou ? ObserverTheme.accent : Color.secondary)
+
+                Text(segment.text)
+                    .font(.callout)
+                    .foregroundStyle(segment.isFinal ? Color.primary : Color.primary.opacity(0.72))
+                    .multilineTextAlignment(isYou ? .trailing : .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(isYou
+                                  ? ObserverTheme.accent.opacity(colorScheme == .dark ? 0.28 : 0.18)
+                                  : ObserverTheme.bubbleOther(for: colorScheme))
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(
+                                isYou
+                                    ? ObserverTheme.accent.opacity(0.35)
+                                    : ObserverTheme.hairline(for: colorScheme),
+                                lineWidth: 1
+                            )
+                    }
+            }
+            .frame(maxWidth: 320, alignment: isYou ? .trailing : .leading)
+
+            if !isYou { Spacer(minLength: 36) }
         }
-        .opacity(segment.isFinal ? 1 : 0.7)
+        .opacity(segment.isFinal ? 1 : 0.78)
+        .accessibilityElement(children: .combine)
     }
 }
 

@@ -13,15 +13,33 @@ final class AudioSignalMonitor {
     private(set) var remoteSilent = false
     private(set) var remoteSource: CaptureAudioSource = .system
 
+    /// Either source can fully drive the wave; quiet levels are expanded perceptually.
+    var combinedLevel: Float {
+        let peak = max(micLevel, remoteLevel)
+        guard peak > 0 else { return 0 }
+        // Gamma < 1 expands the quiet/speaking range so the line isn't stuck near flat.
+        return min(1, pow(peak, 0.55))
+    }
+
+    var anySilent: Bool { micSilent || remoteSilent }
+
     private var micPeak: Float = 0
     private var remotePeak: Float = 0
     private var watchTask: Task<Void, Never>?
+    private var pumpTask: Task<Void, Never>?
     private var monitoring = false
     var onMicDeclaredSilent: (@MainActor () -> Void)?
 
-    /// Peak (0…1) below this after grace counts as silent. Tuned for quiet mics that still ASR well.
-    private let silenceFloor: Float = 0.008
-    private let decay: Float = 0.86
+    /// Peak (0…1) below this after grace counts as silent.
+    private let silenceFloor: Float = 0.02
+    /// Softer level tracking so the wave isn't fed instant spikes.
+    private let riseBlend: Float = 0.28
+    private let fallBlend: Float = 0.16
+
+    /// Lock-protected pending levels written from the real-time capture queues.
+    nonisolated private static let pendingLock = NSLock()
+    nonisolated(unsafe) private static var pendingMic: Float = 0
+    nonisolated(unsafe) private static var pendingRemote: Float = 0
 
     func start(remoteSource: CaptureAudioSource) {
         stop()
@@ -32,8 +50,13 @@ final class AudioSignalMonitor {
         remotePeak = 0
         micSilent = false
         remoteSilent = false
+        Self.pendingLock.lock()
+        Self.pendingMic = 0
+        Self.pendingRemote = 0
+        Self.pendingLock.unlock()
         monitoring = true
         armMicSilenceWatch()
+        startPump()
     }
 
     /// Re-arm silence detection after switching to a fallback mic.
@@ -42,6 +65,9 @@ final class AudioSignalMonitor {
         micLevel = 0
         micPeak = 0
         micSilent = false
+        Self.pendingLock.lock()
+        Self.pendingMic = 0
+        Self.pendingLock.unlock()
         armMicSilenceWatch()
     }
 
@@ -59,14 +85,43 @@ final class AudioSignalMonitor {
         }
     }
 
+    private func startPump() {
+        pumpTask?.cancel()
+        pumpTask = Task { [weak self] in
+            while let self, !Task.isCancelled, self.monitoring {
+                self.drainPending()
+                try? await Task.sleep(for: .milliseconds(16)) // ~60 Hz UI cadence
+            }
+        }
+    }
+
+    private func drainPending() {
+        Self.pendingLock.lock()
+        let mic = Self.pendingMic
+        let remote = Self.pendingRemote
+        // Ease pending peaks down so a single loud buffer doesn't stick.
+        Self.pendingMic *= 0.92
+        Self.pendingRemote *= 0.92
+        Self.pendingLock.unlock()
+
+        apply(level: mic, toMic: true)
+        apply(level: remote, toMic: false)
+    }
+
     func stop() {
         monitoring = false
         watchTask?.cancel()
         watchTask = nil
+        pumpTask?.cancel()
+        pumpTask = nil
         micLevel = 0
         remoteLevel = 0
         micSilent = false
         remoteSilent = false
+        Self.pendingLock.lock()
+        Self.pendingMic = 0
+        Self.pendingRemote = 0
+        Self.pendingLock.unlock()
     }
 
     func dismissMicWarning() { micSilent = false }
@@ -75,47 +130,66 @@ final class AudioSignalMonitor {
     /// Treat successful speech as proof the mic is live (covers metering format edge cases).
     func noteMicSpeechActivity() {
         guard monitoring else { return }
-        micPeak = max(micPeak, 0.35)
-        micLevel = max(micLevel, 0.28)
+        micPeak = max(micPeak, 0.45)
+        micLevel = max(micLevel, 0.4)
         micSilent = false
     }
 
     nonisolated func ingestMic(_ sampleBuffer: CMSampleBuffer) {
-        let level = AudioSignalMonitor.peakLevel(sampleBuffer)
-        Task { @MainActor in
-            self.apply(level: level, toMic: true)
-        }
+        // Mic is usually hotter than SCK system audio.
+        let level = Self.meterLevel(sampleBuffer, gain: 6.5)
+        Self.pendingLock.lock()
+        Self.pendingMic = max(Self.pendingMic, level)
+        Self.pendingLock.unlock()
     }
 
     nonisolated func ingestRemote(_ sampleBuffer: CMSampleBuffer) {
-        let level = AudioSignalMonitor.peakLevel(sampleBuffer)
-        Task { @MainActor in
-            self.apply(level: level, toMic: false)
-        }
+        // ScreenCaptureKit system/app audio often sits much quieter than the mic.
+        let level = Self.meterLevel(sampleBuffer, gain: 14.0)
+        Self.pendingLock.lock()
+        Self.pendingRemote = max(Self.pendingRemote, level)
+        Self.pendingLock.unlock()
     }
 
     private func apply(level: Float, toMic: Bool) {
         guard monitoring else { return }
         if toMic {
             micPeak = max(micPeak, level)
-            micLevel = max(level, micLevel * decay)
+            let blend = level > micLevel ? riseBlend : fallBlend
+            micLevel += (level - micLevel) * blend
             if level >= silenceFloor { micSilent = false }
         } else {
             remotePeak = max(remotePeak, level)
-            remoteLevel = max(level, remoteLevel * decay)
+            let blend = level > remoteLevel ? riseBlend : fallBlend
+            remoteLevel += (level - remoteLevel) * blend
             if level >= silenceFloor { remoteSilent = false }
         }
     }
 
-    /// Peak magnitude 0…1 from interleaved or non-interleaved PCM (SCK mic is often interleaved).
-    nonisolated private static func peakLevel(_ sampleBuffer: CMSampleBuffer) -> Float {
+    /// RMS → dBFS → normalized 0…1, then boosted by `gain` for UI presence.
+    nonisolated private static func meterLevel(_ sampleBuffer: CMSampleBuffer, gain: Float) -> Float {
+        let rms = rmsLevel(sampleBuffer)
+        guard rms > 1e-8 else { return 0 }
+        let db = 20 * log10(Double(rms))
+        // Map a wide speaking / app-audio range into 0…1.
+        let floorDB = -55.0
+        let ceilDB = -8.0
+        var normalized = (db - floorDB) / (ceilDB - floorDB)
+        normalized = min(max(normalized, 0), 1)
+        normalized = pow(normalized, 0.6)
+        // Extra linear gain so soft remote streams still move the line.
+        return min(1, Float(normalized) * (gain / 6.0))
+    }
+
+    nonisolated private static func rmsLevel(_ sampleBuffer: CMSampleBuffer) -> Float {
         guard let formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer),
               let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(formatDescription)?.pointee
-        else { return 0 }
+        else {
+            return rmsFromPCM(AudioPCM.buffer(from: sampleBuffer))
+        }
 
         guard let block = CMSampleBufferGetDataBuffer(sampleBuffer) else {
-            // Fall back through AVAudioPCMBuffer when the sample has no contiguous block.
-            return peakFromPCM(AudioPCM.buffer(from: sampleBuffer))
+            return rmsFromPCM(AudioPCM.buffer(from: sampleBuffer))
         }
 
         var length = 0
@@ -130,7 +204,7 @@ final class AudioSignalMonitor {
               let dataPointer,
               length > 0
         else {
-            return peakFromPCM(AudioPCM.buffer(from: sampleBuffer))
+            return rmsFromPCM(AudioPCM.buffer(from: sampleBuffer))
         }
 
         let isFloat = (asbd.mFormatFlags & kAudioFormatFlagIsFloat) != 0
@@ -141,9 +215,9 @@ final class AudioSignalMonitor {
             let count = length / MemoryLayout<Float>.size
             guard count > 0 else { return 0 }
             return dataPointer.withMemoryRebound(to: Float.self, capacity: count) { pointer in
-                var maxValue: Float = 0
-                vDSP_maxmgv(pointer, 1, &maxValue, vDSP_Length(count))
-                return min(1, maxValue * 3.2)
+                var meanSquare: Float = 0
+                vDSP_measqv(pointer, 1, &meanSquare, vDSP_Length(count))
+                return sqrt(meanSquare)
             }
         }
 
@@ -151,32 +225,32 @@ final class AudioSignalMonitor {
             let count = length / MemoryLayout<Int16>.size
             guard count > 0 else { return 0 }
             return dataPointer.withMemoryRebound(to: Int16.self, capacity: count) { pointer in
-                var maxValue: Float = 0
                 var floats = [Float](repeating: 0, count: count)
                 vDSP_vflt16(pointer, 1, &floats, 1, vDSP_Length(count))
                 var scale: Float = 1.0 / Float(Int16.max)
                 vDSP_vsmul(floats, 1, &scale, &floats, 1, vDSP_Length(count))
-                vDSP_maxmgv(floats, 1, &maxValue, vDSP_Length(count))
-                return min(1, maxValue * 3.2)
+                var meanSquare: Float = 0
+                vDSP_measqv(floats, 1, &meanSquare, vDSP_Length(count))
+                return sqrt(meanSquare)
             }
         }
 
-        return peakFromPCM(AudioPCM.buffer(from: sampleBuffer))
+        return rmsFromPCM(AudioPCM.buffer(from: sampleBuffer))
     }
 
-    nonisolated private static func peakFromPCM(_ pcm: AVAudioPCMBuffer?) -> Float {
+    nonisolated private static func rmsFromPCM(_ pcm: AVAudioPCMBuffer?) -> Float {
         guard let pcm, pcm.frameLength > 0 else { return 0 }
         let frames = Int(pcm.frameLength)
         let channels = Int(pcm.format.channelCount)
-        var maxValue: Float = 0
+        var best: Float = 0
 
         if let data = pcm.floatChannelData {
             for channel in 0..<channels {
-                var channelMax: Float = 0
-                vDSP_maxmgv(data[channel], 1, &channelMax, vDSP_Length(frames))
-                maxValue = max(maxValue, channelMax)
+                var meanSquare: Float = 0
+                vDSP_measqv(data[channel], 1, &meanSquare, vDSP_Length(frames))
+                best = max(best, sqrt(meanSquare))
             }
-            return min(1, maxValue * 3.2)
+            return best
         }
 
         if let data = pcm.int16ChannelData {
@@ -185,21 +259,21 @@ final class AudioSignalMonitor {
                 vDSP_vflt16(data[channel], 1, &floats, 1, vDSP_Length(frames))
                 var scale: Float = 1.0 / Float(Int16.max)
                 vDSP_vsmul(floats, 1, &scale, &floats, 1, vDSP_Length(frames))
-                var channelMax: Float = 0
-                vDSP_maxmgv(floats, 1, &channelMax, vDSP_Length(frames))
-                maxValue = max(maxValue, channelMax)
+                var meanSquare: Float = 0
+                vDSP_measqv(floats, 1, &meanSquare, vDSP_Length(frames))
+                best = max(best, sqrt(meanSquare))
             }
-            return min(1, maxValue * 3.2)
+            return best
         }
 
-        // Interleaved buffer: read first AudioBuffer's bytes.
         let list = UnsafeMutableAudioBufferListPointer(pcm.mutableAudioBufferList)
         guard let first = list.first, let mData = first.mData, first.mDataByteSize > 0 else { return 0 }
         if pcm.format.commonFormat == .pcmFormatFloat32 {
             let count = Int(first.mDataByteSize) / MemoryLayout<Float>.size
             let pointer = mData.bindMemory(to: Float.self, capacity: count)
-            vDSP_maxmgv(pointer, 1, &maxValue, vDSP_Length(count))
-            return min(1, maxValue * 3.2)
+            var meanSquare: Float = 0
+            vDSP_measqv(pointer, 1, &meanSquare, vDSP_Length(count))
+            return sqrt(meanSquare)
         }
         if pcm.format.commonFormat == .pcmFormatInt16 {
             let count = Int(first.mDataByteSize) / MemoryLayout<Int16>.size
@@ -208,8 +282,9 @@ final class AudioSignalMonitor {
             vDSP_vflt16(pointer, 1, &floats, 1, vDSP_Length(count))
             var scale: Float = 1.0 / Float(Int16.max)
             vDSP_vsmul(floats, 1, &scale, &floats, 1, vDSP_Length(count))
-            vDSP_maxmgv(floats, 1, &maxValue, vDSP_Length(count))
-            return min(1, maxValue * 3.2)
+            var meanSquare: Float = 0
+            vDSP_measqv(floats, 1, &meanSquare, vDSP_Length(count))
+            return sqrt(meanSquare)
         }
         return 0
     }

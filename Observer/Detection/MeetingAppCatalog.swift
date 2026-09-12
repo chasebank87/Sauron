@@ -43,6 +43,22 @@ enum MeetingAppCatalog {
         "zoom.us"
     ]
 
+    /// Teams main-shell surfaces — these match `|` heuristics but are not the call window.
+    private static let teamsShellHeads: Set<String> = [
+        "calendar",
+        "chat",
+        "activity",
+        "calls",
+        "files",
+        "apps",
+        "settings",
+        "teams",
+        "microsoft teams",
+        "onedrive",
+        "communities",
+        "multi-call window"
+    ]
+
     static func match(
         bundleIdentifier: String?,
         appName: String?,
@@ -78,14 +94,7 @@ enum MeetingAppCatalog {
             if zoomExcludedTitles.contains(normalized) { return nil }
             return .zoom
         case .teams:
-            if normalized.isEmpty { return nil }
-            if titleMatches(
-                title,
-                patterns: [#"\bmeeting\b"#, #"\bcall\b"#, #"\|"#, #"microsoft teams"#]
-            ) {
-                return .teams
-            }
-            return nil
+            return teamsMeetingMatch(title: title, normalized: normalized)
         case .faceTime:
             return .faceTime
         case .webex:
@@ -101,6 +110,48 @@ enum MeetingAppCatalog {
         default:
             return kind
         }
+    }
+
+    /// Prefer call/meeting stages; never treat Calendar/Chat shells as meetings.
+    static func teamsMeetingMatch(title: String, normalized: String) -> MeetingKind? {
+        if normalized.isEmpty { return nil }
+        if isTeamsShellTitle(normalized) { return nil }
+
+        // Strong meeting signals.
+        if titleMatches(
+            title,
+            patterns: [
+                #"meeting with"#,
+                #"call with"#,
+                #"\bmeeting\b"#,
+                #"\bcall\b"#,
+                #"\bwebinar\b"#
+            ]
+        ) {
+            return .teams
+        }
+
+        // "Design review | Microsoft Teams" style — allow non-shell heads.
+        if titleMatches(title, patterns: [#"\|\s*microsoft teams\s*$"#]) {
+            return .teams
+        }
+
+        return nil
+    }
+
+    static func isTeamsShellTitle(_ normalizedTitle: String) -> Bool {
+        let head = normalizedTitle
+            .split(separator: "|", maxSplits: 1, omittingEmptySubsequences: true)
+            .first
+            .map { normalize(String($0)) } ?? normalizedTitle
+
+        if teamsShellHeads.contains(head) { return true }
+        // "Calendar | (External) | Microsoft Teams"
+        if head.hasPrefix("calendar") { return true }
+        if head.hasPrefix("chat") { return true }
+        if head.hasPrefix("activity") { return true }
+        if head.hasPrefix("calls") { return true }
+        return false
     }
 
     static func webMatch(title: String) -> MeetingKind? {
@@ -125,6 +176,8 @@ enum MeetingAppCatalog {
             title,
             patterns: [#"microsoft teams"#, #"teams\.microsoft\.com"#, #"teams\.live\.com"#]
         ), titleMatches(title, patterns: [#"\bmeeting\b"#, #"\bcall\b"#, #"\|"#]) {
+            // Browser Teams tabs still use shell names sometimes.
+            if isTeamsShellTitle(normalize(title)) { return nil }
             return .teams
         }
         if titleMatches(title, patterns: [#"webex"#]) {
@@ -139,7 +192,7 @@ enum MeetingAppCatalog {
         }
     }
 
-    private static func normalize(_ title: String) -> String {
+    static func normalize(_ title: String) -> String {
         title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 }

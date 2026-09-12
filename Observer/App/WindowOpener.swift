@@ -16,6 +16,12 @@ struct WindowOpener: View {
                     NSApp.activate(ignoringOtherApps: true)
                 }
             }
+            .onChange(of: appState.dashboardToken) { _, token in
+                if token != nil {
+                    openWindow(id: "dashboard")
+                    NSApp.activate(ignoringOtherApps: true)
+                }
+            }
             .onChange(of: appState.wantsOnboarding) { _, wants in
                 if wants { appState.showOnboarding() }
             }

@@ -1,95 +1,110 @@
 import SwiftUI
 
-/// ChatGPT-style image-gen ambient: blue circular dots on black with a drifting
-/// illumination field (scale + opacity), not a color mesh/glow wash.
+/// ChatGPT-style image-gen ambient: circular dots lit by two soft spotlights.
+/// Adapts base plate to light/dark so the panel follows system appearance.
 struct RecordingAmbientBackground: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    /// Matches the reference frame (~#3A79C6 electric blue).
-    private static let dotColor = Color(red: 58 / 255, green: 121 / 255, blue: 198 / 255)
+    @Environment(\.colorScheme) private var colorScheme
 
     private let spacing: CGFloat = 11
     private let baseRadius: CGFloat = 1.9
 
+    private var isDark: Bool { colorScheme == .dark }
+
+    private var baseColor: Color {
+        isDark
+            ? Color.black
+            : Color(red: 0.93, green: 0.94, blue: 0.97)
+    }
+
+    private var dotColor: Color {
+        // Slightly deeper blue on light so dots stay visible on pale glass.
+        isDark
+            ? Color(red: 58 / 255, green: 121 / 255, blue: 198 / 255)
+            : Color(red: 45 / 255, green: 98 / 255, blue: 190 / 255)
+    }
+
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: reduceMotion)) { timeline in
             let t = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
+            let dark = isDark
             Canvas { context, size in
-                context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.black))
+                context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(baseColor))
 
                 let cols = Int(ceil(size.width / spacing)) + 2
                 let rows = Int(ceil(size.height / spacing)) + 2
-                let focus = focusPoint(at: t, in: size)
+                let spots = spotlights(at: t, in: size)
+                let beam = max(size.width, size.height) * 0.38
+                let floor = dark ? 0.06 : 0.10
+                let gain = dark ? 0.94 : 0.78
 
                 for row in 0..<rows {
                     for col in 0..<cols {
-                        let x = CGFloat(col) * spacing
-                        let y = CGFloat(row) * spacing
-                        let intensity = illumination(
-                            at: CGPoint(x: x, y: y),
-                            focus: focus,
-                            size: size,
-                            time: t,
-                            col: col,
-                            row: row
-                        )
+                        let point = CGPoint(x: CGFloat(col) * spacing, y: CGFloat(row) * spacing)
+                        let intensity = illumination(at: point, spots: spots, beam: beam)
                         guard intensity > 0.02 else { continue }
 
-                        let radius = baseRadius * (0.35 + 0.85 * intensity)
+                        let radius = baseRadius * (0.28 + 0.92 * intensity)
                         let rect = CGRect(
-                            x: x - radius,
-                            y: y - radius,
+                            x: point.x - radius,
+                            y: point.y - radius,
                             width: radius * 2,
                             height: radius * 2
                         )
-                        let alpha = Double(0.08 + 0.92 * intensity)
                         context.fill(
                             Path(ellipseIn: rect),
-                            with: .color(Self.dotColor.opacity(alpha))
+                            with: .color(dotColor.opacity(Double(floor + gain * intensity)))
                         )
                     }
                 }
             }
+            .id(colorScheme) // Rebuild canvas when appearance flips.
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
 
-    /// Soft spotlight that slowly drifts (static top-leading when motion is reduced).
-    private func focusPoint(at t: TimeInterval, in size: CGSize) -> CGPoint {
+    private func spotlights(at t: TimeInterval, in size: CGSize) -> [CGPoint] {
         if reduceMotion {
-            return CGPoint(x: size.width * 0.22, y: size.height * 0.18)
+            return [
+                CGPoint(x: size.width * 0.28, y: size.height * 0.30),
+                CGPoint(x: size.width * 0.68, y: size.height * 0.58)
+            ]
         }
-        let nx = 0.28 + 0.42 * (0.5 + 0.5 * sin(t * 0.22))
-        let ny = 0.22 + 0.38 * (0.5 + 0.5 * cos(t * 0.17 + 0.6))
-        return CGPoint(x: size.width * nx, y: size.height * ny)
+
+        let cx = size.width * 0.5
+        let cy = size.height * 0.5
+        let a = orbit(
+            center: CGPoint(x: cx, y: cy),
+            rx: size.width * 0.28,
+            ry: size.height * 0.24,
+            angle: t * 0.35
+        )
+        let b = orbit(
+            center: CGPoint(x: cx, y: cy),
+            rx: size.width * 0.26,
+            ry: size.height * 0.30,
+            angle: t * -0.28 + .pi * 0.85
+        )
+        return [a, b]
     }
 
-    /// Radial falloff + slow diagonal wave + faint per-dot twinkle — the ChatGPT
-    /// generating rhythm (illuminated region, not uniform blink).
-    private func illumination(
-        at point: CGPoint,
-        focus: CGPoint,
-        size: CGSize,
-        time: TimeInterval,
-        col: Int,
-        row: Int
-    ) -> CGFloat {
-        let dx = point.x - focus.x
-        let dy = point.y - focus.y
-        let dist = sqrt(dx * dx + dy * dy)
-        let radius = max(size.width, size.height) * 0.72
-        let radial = max(0, 1 - dist / radius)
-        let falloff = radial * radial
-
-        guard !reduceMotion else { return falloff }
-
-        let wave = 0.5 + 0.5 * sin(
-            (point.x + point.y) * 0.045 - time * 1.15
+    private func orbit(center: CGPoint, rx: CGFloat, ry: CGFloat, angle: Double) -> CGPoint {
+        CGPoint(
+            x: center.x + rx * CGFloat(cos(angle)),
+            y: center.y + ry * CGFloat(sin(angle))
         )
-        let twinkle = 0.88 + 0.12 * sin(
-            time * 2.4 + Double(col) * 0.73 + Double(row) * 1.17
-        )
-        return min(1, falloff * (0.55 + 0.45 * CGFloat(wave)) * CGFloat(twinkle))
+    }
+
+    private func illumination(at point: CGPoint, spots: [CGPoint], beam: CGFloat) -> CGFloat {
+        var energy: CGFloat = 0
+        for spot in spots {
+            let dx = point.x - spot.x
+            let dy = point.y - spot.y
+            let dist = sqrt(dx * dx + dy * dy)
+            let u = max(0, 1 - dist / beam)
+            energy += u * u * u
+        }
+        return min(1, energy)
     }
 }

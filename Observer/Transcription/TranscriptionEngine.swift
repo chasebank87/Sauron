@@ -212,7 +212,7 @@ private final class Lane: @unchecked Sendable {
 
         let segment = LiveSegment(
             id: id,
-            speaker: speaker,
+            speakerKey: speaker.speakerKey,
             text: text,
             start: start.isFinite ? start : fallback,
             end: end.isFinite ? end : fallback,

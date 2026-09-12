@@ -25,19 +25,29 @@ final class AppState {
     var errorMessage: String?
     var wantsOnboarding = false
     var reportToken: UUID?
+    var dashboardToken: UUID?
+    var dashboardSelectedTab: DashboardTab = .home
     var lastError: String?
     var isSummarizing = false
     var postMeetingPhase: PostMeetingPhase = .idle
+    /// Bumped after capture files are fully finalized so players reload finished media.
+    var mediaReadyToken = UUID()
     let audioMonitor = AudioSignalMonitor()
+    var assistCards: [LiveAssistCard] = []
 
     @ObservationIgnored let detector = MeetingDetector()
     @ObservationIgnored let capture = CaptureEngine()
     @ObservationIgnored let transcription = TranscriptionEngine()
+    @ObservationIgnored let diarizer = SpeakerDiarizer()
+    @ObservationIgnored let liveAssistant = LiveAssistantEngine()
     @ObservationIgnored let promptPanel = GlassPanelController()
     @ObservationIgnored let transcriptPanel = GlassPanelController()
+    @ObservationIgnored let assistPanel = GlassPanelController()
     @ObservationIgnored let errorPanel = GlassPanelController()
     @ObservationIgnored let onboardingPanel = GlassPanelController()
+    let memoryMCPServer = MemoryMCPServer()
     @ObservationIgnored private var detectorWatch: Task<Void, Never>?
+    @ObservationIgnored private var hotkeyMonitor: GlobalHotkeyMonitor?
     @ObservationIgnored private var micPriorityIndex = 0
     private(set) var activeMicDisplayName = "System Default"
 
@@ -72,8 +82,13 @@ final class AppState {
         promptCapture = store.defaultCapture
         promptTranscript = store.defaultTranscript
         promptMeetingAppAudio = store.meetingAppAudioOnly
+        SpeakerProfileStore.shared.attach(context: modelContainer.mainContext)
         let transcriptionEngine = transcription
         let monitor = audioMonitor
+        let remoteDiarizer = diarizer
+        liveAssistant.onCardsChanged = { [weak self] cards in
+            self?.assistCards = cards
+        }
         transcriptionEngine.onSegment = { segment in
             Task { @MainActor in
                 AppState.shared.upsert(segment)
@@ -81,6 +96,7 @@ final class AppState {
         }
         capture.onSystemAudio = { buffer in
             monitor.ingestRemote(buffer)
+            remoteDiarizer.ingest(buffer)
             transcriptionEngine.feedSystem(buffer)
         }
         capture.onMicAudio = { buffer in
@@ -94,8 +110,10 @@ final class AppState {
         }
         capture.onCaptureInterrupted = { [weak self] _ in
             Task { @MainActor in
-                guard let self, self.status == .recording else { return }
-                await self.finishRecording()
+                // SCK often stops the *video* stream when Zoom/Teams recreates a
+                // window mid-call. That is not a meeting end — only the detector
+                // (or the Stop button) should finish the recording.
+                _ = self
             }
         }
         audioMonitor.onMicDeclaredSilent = { [weak self] in
@@ -103,14 +121,47 @@ final class AppState {
                 await self?.advanceMicrophoneFallback()
             }
         }
+        detector.subscribedCalendarIDsProvider = { [weak self] in
+            self?.settings.effectiveSubscribedCalendarIDs
+        }
+        memoryMCPServer.attach(appState: self)
     }
 
     func start() {
+        // Memory MCP is independent of meeting detection / onboarding UI.
+        syncMemoryMCPServer()
         if !settings.hasCompletedOnboarding {
             showOnboarding()
             return
         }
         beginDetectionIfNeeded()
+        installDashboardHotkey()
+    }
+
+    func syncMemoryMCPServer() {
+        memoryMCPServer.syncWithSettings()
+    }
+
+    func installDashboardHotkey() {
+        hotkeyMonitor?.stop()
+        let monitor = GlobalHotkeyMonitor(
+            keyCode: settings.dashboardShortcutKeyCode,
+            modifiers: NSEvent.ModifierFlags(rawValue: settings.dashboardShortcutModifiers)
+        ) { [weak self] in
+            Task { @MainActor in
+                self?.openDashboard()
+            }
+        }
+        monitor.start()
+        hotkeyMonitor = monitor
+    }
+
+    func openDashboard(tab: DashboardTab? = nil) {
+        if let tab {
+            dashboardSelectedTab = tab
+        }
+        dashboardToken = UUID()
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     func showOnboarding() {
@@ -201,6 +252,71 @@ final class AppState {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    @discardableResult
+    func deleteMeetings(_ meetings: [Meeting]) -> Int {
+        let ids = Set(meetings.map(\.id))
+        let count = MeetingStore.delete(meetings, context: modelContext)
+        if let selected = selectedMeeting, ids.contains(selected.id) {
+            selectedMeeting = nil
+        }
+        return count
+    }
+
+    func meetingDocuments(for meeting: Meeting) -> [MeetingDocument] {
+        MeetingDocumentStore.list(for: meeting.id)
+    }
+
+    @discardableResult
+    func attachDocuments(to meeting: Meeting, urls: [URL]) async throws -> [MeetingDocument] {
+        let attached = try MeetingDocumentStore.attach(urls: urls, to: meeting.id)
+        await MeetingMemoryIndexer.index(meeting: meeting, appState: self)
+        return attached
+    }
+
+    func removeDocument(_ document: MeetingDocument, from meeting: Meeting) async throws {
+        try MeetingDocumentStore.remove(id: document.id, from: meeting.id)
+        await MeetingMemoryIndexer.index(meeting: meeting, appState: self)
+    }
+
+    func resummarize(_ meeting: Meeting) {
+        Task {
+            isSummarizing = true
+            postMeetingPhase = .summarizing
+            defer {
+                postMeetingPhase = .idle
+                isSummarizing = false
+            }
+            await summarize(meeting)
+        }
+    }
+
+    func assignSpeaker(
+        from sourceKey: String,
+        to profile: SpeakerProfile,
+        in meeting: Meeting
+    ) {
+        let target = profile.speakerKey
+        MeetingStore.remapSpeaker(
+            from: sourceKey,
+            to: target,
+            in: meeting,
+            context: modelContext
+        )
+        if let vector = diarizer.fingerprint(forSpeakerKey: sourceKey)
+            ?? diarizer.fingerprint(forSpeakerKey: target) {
+            SpeakerProfileStore.shared.updateVoiceprint(profile, vector: vector)
+        }
+        // Keep liveSegments in sync if this is the current meeting
+        for index in liveSegments.indices where liveSegments[index].speakerKey == SpeakerKey.normalize(sourceKey) {
+            liveSegments[index].speakerKey = target
+        }
+    }
+
+    func createAndAssignSpeaker(name: String, from sourceKey: String, in meeting: Meeting) {
+        let profile = SpeakerProfileStore.shared.addPerson(name: name)
+        assignSpeaker(from: sourceKey, to: profile, in: meeting)
+    }
+
     func dismissError() {
         errorMessage = nil
         errorPanel.close()
@@ -213,17 +329,19 @@ final class AppState {
         case .ollama: urlString = settings.ollamaURL
         case .lmStudio: urlString = settings.lmStudioURL
         case .openRouter: urlString = settings.openRouterURL
+        case .hermes: urlString = settings.hermesURL
+        case .openClaw: urlString = settings.openClawURL
         }
         guard let url = URL(string: urlString) else {
             throw ObserverError.providerUnreachable(kind.displayName)
         }
-        if kind.requiresAPIKey, (KeychainStore.openRouterAPIKey ?? "").isEmpty {
+        if kind.requiresAPIKey, (KeychainStore.apiKey(for: kind) ?? "").isEmpty {
             throw ObserverError.missingAPIKey
         }
         let client = LLMClient(
             kind: kind,
             baseURL: url,
-            apiKey: KeychainStore.openRouterAPIKey
+            apiKey: KeychainStore.apiKey(for: kind)
         )
         return (client, settings.modelID)
     }
@@ -259,13 +377,18 @@ final class AppState {
     }
 
     private func showPrompt() {
+        let alert = settings.promptAlertEnabled
         promptPanel.present(
-            RecordPromptView()
+            RecordPromptView(alertEnabled: alert)
                 .environment(self),
             size: GlassChrome.promptSize,
             placement: .topCenter,
-            activates: true
+            activates: true,
+            animated: alert
         )
+        if alert {
+            PromptAlert.play()
+        }
     }
 
     private func showTranscript() {
@@ -277,6 +400,22 @@ final class AppState {
             placement: .trailing,
             usesPaneChrome: true
         )
+        showAssistIfNeeded()
+    }
+
+    private func showAssistIfNeeded() {
+        assistPanel.present(
+            LiveAssistPanelView()
+                .environment(self),
+            size: GlassChrome.assistSize,
+            placement: .leading,
+            usesPaneChrome: true
+        )
+    }
+
+    private func closeLivePanels() {
+        transcriptPanel.close()
+        assistPanel.close()
     }
 
     private func showErrorPanel() {
@@ -299,12 +438,16 @@ final class AppState {
         currentMeeting = meeting
         liveSegments = []
         streamPreview = ""
+        assistCards = []
         recordingStartedAt = .now
         status = .recording
         let priority = AudioDeviceCatalog.resolvedPriority(savedIDs: settings.micPriorityIDs)
         micPriorityIndex = 0
         activeMicDisplayName = priority.first?.name ?? "System Default"
         audioMonitor.start(remoteSource: promptAudioSource)
+        SpeakerProfileStore.shared.attach(context: modelContext)
+        diarizer.start(profilePrints: SpeakerProfileStore.shared.voiceprints())
+        liveAssistant.start()
 
         do {
             let modes = promptModes
@@ -321,13 +464,14 @@ final class AppState {
                 microphoneDeviceID: priority.first?.captureDeviceID,
                 folder: MediaStore.folder(for: meeting.id)
             )
-            meeting.videoPath = capture.videoPath
-            meeting.micAudioPath = capture.micPath
-            meeting.systemAudioPath = capture.systemPath
+            // Do not publish media paths yet — the files are still being written.
+            // Early report open must not hand AVPlayer an incomplete MP4 (crossed play button).
             try? modelContext.save()
             showTranscript()
         } catch {
             audioMonitor.stop()
+            diarizer.stop()
+            _ = liveAssistant.stop()
             await capture.stop()
             _ = await transcription.stop()
             fail(error)
@@ -354,14 +498,17 @@ final class AppState {
         meeting.status = .processing
         MeetingStore.persist(liveSegments: segments, into: meeting, context: modelContext)
         try? modelContext.save()
-        transcriptPanel.close()
+        closeLivePanels()
         openReport(meeting)
 
         await capture.stop()
+        diarizer.stop()
+        let cards = liveAssistant.stop()
+        meeting.assistCards = cards
         if meeting.recordTranscript {
             let finals = await transcription.stop()
             if !finals.isEmpty {
-                segments = merge(live: segments, finals: finals)
+                segments = merge(live: segments, finals: finals).map { tagSpeaker($0) }
                 liveSegments = segments
                 MeetingStore.persist(liveSegments: segments, into: meeting, context: modelContext)
             }
@@ -369,25 +516,47 @@ final class AppState {
         meeting.videoPath = capture.videoPath
         meeting.micAudioPath = capture.micPath
         meeting.systemAudioPath = capture.systemPath
+        mediaReadyToken = UUID()
         try? modelContext.save()
 
-        if meeting.recordAudio || meeting.recordTranscript {
+        let folder = MediaStore.folder(for: meeting.id)
+        let micURL = capture.micPath.map { URL(fileURLWithPath: $0) }
+        let systemURL = capture.systemPath.map { URL(fileURLWithPath: $0) }
+        let rawVideoURL = capture.videoPath.map { URL(fileURLWithPath: $0) }
+
+        var mixedURL: URL?
+        if meeting.recordAudio || meeting.recordTranscript || meeting.recordVisual {
             postMeetingPhase = .mixingAudio
-            let folder = MediaStore.folder(for: meeting.id)
-            let output = AudioMixComposer.mixedURL(in: folder)
-            let micURL = capture.micPath.map { URL(fileURLWithPath: $0) }
-            let systemURL = capture.systemPath.map { URL(fileURLWithPath: $0) }
             do {
-                if let mixed = try await AudioMixComposer.mix(
+                mixedURL = try await MediaCompose.mixAudio(
                     micURL: micURL,
                     systemURL: systemURL,
-                    outputURL: output
-                ) {
-                    meeting.mixedAudioPath = mixed.path
+                    outputURL: MediaCompose.mixedAudioURL(in: folder)
+                )
+                if let mixedURL {
+                    meeting.mixedAudioPath = mixedURL.path
+                    mediaReadyToken = UUID()
                     try? modelContext.save()
                 }
             } catch {
                 lastError = "Mixed audio unavailable: \(error.localizedDescription)"
+            }
+        }
+
+        if meeting.recordVisual, let rawVideoURL {
+            postMeetingPhase = .composingVideo
+            do {
+                if let composed = try await MediaCompose.muxVideo(
+                    videoURL: rawVideoURL,
+                    audioURL: mixedURL ?? micURL ?? systemURL,
+                    outputURL: MediaCompose.composedVideoURL(in: folder)
+                ) {
+                    meeting.videoPath = composed.path
+                    mediaReadyToken = UUID()
+                    try? modelContext.save()
+                }
+            } catch {
+                lastError = "Combined video unavailable: \(error.localizedDescription)"
             }
         }
 
@@ -402,7 +571,7 @@ final class AppState {
     private func summarize(_ meeting: Meeting) async {
         meeting.status = .processing
         try? modelContext.save()
-        let transcript = meeting.plainTranscript
+        let transcript = meeting.namedTranscript
         guard meeting.recordTranscript else {
             meeting.status = .ready
             try? modelContext.save()
@@ -413,10 +582,21 @@ final class AppState {
             let (client, configuredModel) = try makeClient()
             let models = (try? await client.listModels()) ?? []
             let model = configuredModel.isEmpty ? (models.first?.id ?? OpenRouterProvider.suggestedModel) : configuredModel
+            let query = "\(meeting.title)\n\(transcript.prefix(800))"
+            let injectMemory = settings.shouldInjectMemoryIntoPrompts
+            let memory = injectMemory
+                ? await MeetingMemoryIndexer.retrieveContext(
+                    query: query,
+                    appState: self,
+                    excludingMeetingID: meeting.id
+                )
+                : (context: "", citations: [])
             let messages = Summarizer.messages(
                 transcript: transcript,
                 meetingTitle: meeting.title,
-                appName: meeting.appName
+                appName: meeting.appName,
+                memoryContext: injectMemory ? memory.context : nil,
+                mcpToolHint: injectMemory ? nil : MemoryMCPHints.systemPromptAddon
             )
             var raw = ""
             for try await chunk in client.streamChat(model: model, messages: messages) {
@@ -430,13 +610,55 @@ final class AppState {
             if !summary.title.isEmpty {
                 meeting.title = summary.title
             }
+            meeting.memoryCitations = memory.citations
             meeting.status = .ready
+            try? modelContext.save()
+
+            TrackedItemStore.sync(from: summary, meeting: meeting, context: modelContext)
+            await reconcileTrackedItems(for: meeting, summary: summary, transcript: transcript, client: client, model: model)
+            await MeetingMemoryIndexer.index(meeting: meeting, appState: self)
         } catch {
             meeting.status = transcript.isEmpty ? .ready : .failed
             lastError = error.localizedDescription
             streamPreview = "Transcript saved. Connect a provider in Settings to summarize.\n\n\(error.localizedDescription)"
         }
         try? modelContext.save()
+    }
+
+    private func reconcileTrackedItems(
+        for meeting: Meeting,
+        summary: MeetingSummary,
+        transcript: String,
+        client: LLMClient,
+        model: String
+    ) async {
+        let open = TrackedItemStore.openItems(context: modelContext, limit: 50)
+            .filter { $0.sourceMeetingID != meeting.id }
+        guard !open.isEmpty else { return }
+        let payload = open.map { (id: $0.id, kind: $0.kind.rawValue, text: $0.text, owner: $0.owner) }
+        let messages = TrackedItemReconciler.messages(
+            openItems: payload,
+            meetingTitle: meeting.title,
+            summaryText: summary.summary,
+            transcript: transcript
+        )
+        do {
+            let raw = try await client.complete(model: model, messages: messages)
+            let resolutions = TrackedItemReconciler.parse(raw)
+            let byID = Dictionary(uniqueKeysWithValues: open.map { ($0.id, $0) })
+            for resolution in resolutions {
+                guard let item = byID[resolution.id] else { continue }
+                TrackedItemStore.complete(
+                    item,
+                    by: .auto,
+                    resolvedInMeetingID: meeting.id,
+                    note: resolution.note.isEmpty ? nil : resolution.note,
+                    context: modelContext
+                )
+            }
+        } catch {
+            // Soft-fail: leave open items unchanged.
+        }
     }
 
     private func advanceMicrophoneFallback() async {
@@ -457,15 +679,29 @@ final class AppState {
     }
 
     private func upsert(_ segment: LiveSegment) {
-        if segment.speaker == .you, !segment.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        let tagged = tagSpeaker(segment)
+        if tagged.isSelf, !tagged.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             audioMonitor.noteMicSpeechActivity()
         }
-        if let index = liveSegments.firstIndex(where: { $0.id == segment.id }) {
-            liveSegments[index] = segment
+        if tagged.isFinal {
+            liveAssistant.ingest(final: tagged, appState: self)
+        }
+        if let index = liveSegments.firstIndex(where: { $0.id == tagged.id }) {
+            liveSegments[index] = tagged
         } else {
-            liveSegments.append(segment)
+            liveSegments.append(tagged)
             liveSegments.sort { $0.start < $1.start }
         }
+    }
+
+    private func tagSpeaker(_ segment: LiveSegment) -> LiveSegment {
+        var copy = segment
+        if segment.isSelf || SpeakerKey.isSelf(segment.speakerKey) {
+            copy.speakerKey = SpeakerKey.selfKey
+        } else {
+            copy.speakerKey = diarizer.speakerKey(at: segment.start, end: segment.end)
+        }
+        return copy
     }
 
     private func merge(live: [LiveSegment], finals: [LiveSegment]) -> [LiveSegment] {
@@ -481,11 +717,13 @@ final class AppState {
         showErrorPanel()
         detector.clearRecordingWatch()
         audioMonitor.stop()
+        diarizer.stop()
+        _ = liveAssistant.stop()
         postMeetingPhase = .idle
         isSummarizing = false
         if status == .recording || status == .processing {
             status = settings.watchForMeetings ? .detecting : .idle
-            transcriptPanel.close()
+            closeLivePanels()
         }
     }
 }

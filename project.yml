@@ -55,6 +55,8 @@ targets:
       - sdk: EventKit.framework
       - sdk: AVFoundation.framework
       - sdk: SwiftData.framework
+      - sdk: Charts.framework
+      - sdk: PDFKit.framework
     scheme:
       testTargets:
         - ObserverTests

@@ -41,8 +41,45 @@ enum KeychainStore {
         set { set(newValue, for: "openrouter") }
     }
 
+    static var hermesAPIKey: String? {
+        get { string(for: "hermes") }
+        set { set(newValue, for: "hermes") }
+    }
+
+    static var openClawAPIKey: String? {
+        get { string(for: "openclaw") }
+        set { set(newValue, for: "openclaw") }
+    }
+
     static var tavilyAPIKey: String? {
         get { string(for: "tavily") }
         set { set(newValue, for: "tavily") }
+    }
+
+    /// Bearer token for the localhost Memory MCP server.
+    static var mcpServerToken: String {
+        get {
+            if let existing = string(for: "mcpServerToken"), !existing.isEmpty {
+                return existing
+            }
+            return rotateMCPServerToken()
+        }
+        set { set(newValue, for: "mcpServerToken") }
+    }
+
+    @discardableResult
+    static func rotateMCPServerToken() -> String {
+        let token = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
+        set(token, for: "mcpServerToken")
+        return token
+    }
+
+    static func apiKey(for kind: LLMProviderKind) -> String? {
+        switch kind {
+        case .openRouter: openRouterAPIKey
+        case .hermes: hermesAPIKey
+        case .openClaw: openClawAPIKey
+        case .ollama, .lmStudio: nil
+        }
     }
 }

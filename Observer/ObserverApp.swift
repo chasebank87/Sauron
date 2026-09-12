@@ -42,11 +42,22 @@ struct ObserverApp: App {
         }
         .defaultSize(width: 720, height: 640)
         .windowStyle(.hiddenTitleBar)
+
+        Window("Dashboard", id: "dashboard") {
+            DashboardWindow()
+                .environment(appState)
+                .modelContainer(appState.modelContainer)
+                .tint(ObserverTheme.accent)
+        }
+        .defaultSize(width: 1100, height: 720)
+        .windowStyle(.automatic)
     }
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Follow System Settings → Appearance (never force dark/light).
+        NSApp.appearance = nil
         NSApp.setActivationPolicy(.accessory)
         AppState.shared.start()
     }

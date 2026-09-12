@@ -24,12 +24,24 @@ Run the **Observer** scheme. The app lives in the menu bar (no Dock icon).
 
 1. Grant Screen Recording, Microphone, and Speech Recognition when asked.
 2. Open the menu bar extra → **Simulate meeting** to exercise the glass prompt without a real call.
-3. In Settings → Models, point Observer at Ollama (`http://127.0.0.1:11434`), LM Studio (`http://127.0.0.1:1234`), or OpenRouter.
+3. In Settings → Models, point Observer at Ollama (`http://127.0.0.1:11434`), LM Studio (`http://127.0.0.1:1234`), OpenRouter, Hermes (`http://127.0.0.1:8642`), or OpenClaw (`http://127.0.0.1:18789`).
 
 Recordings and the SwiftData store live in `~/Library/Application Support/Observer/`.
 
+With **Hermes** or **OpenClaw**, Live Assist research uses the agent’s tools; Tavily settings are hidden for those backends.
+
 ## Phase 1 scope
 
-Detection, glass record prompt, ScreenCaptureKit capture, live dual-track transcript (You / Others), meeting library, post-meeting summary.
+Detection, glass record prompt, ScreenCaptureKit capture, live dual-track transcript, meeting library, post-meeting summary.
 
-Live research (Tavily), fact-checking, and historical RAG are later phases.
+## Phase 2 scope
+
+Speaker Profiles (renameable self on mic, remote voice clustering, report assign/edit), Live Assist HUD (insights, Tavily fact-check/research), Research settings.
+
+## Phase 3 — Meeting memory
+
+Local RAG index under `~/Library/Application Support/Observer/Memory/`. Embeddings via Ollama, LM Studio, or OpenRouter (`/v1/embeddings`). Retrieved chunks feed post-meeting summaries, Live Assist “From past meetings” cards, and Dashboard Chat. Soft-fails if embeddings are unavailable.
+
+## Phase 4 — Dashboard
+
+Global shortcut (default ⌥⌘D) opens a multi-tab Dashboard: Analytics, Library (calendar/timeline), Open Items (cross-meeting actions/asks with manual + auto-complete), Chat, People, and Memory. Open items sync from summaries; new meetings can auto-close completed work when evidence is clear.

@@ -12,6 +12,7 @@ enum PostMeetingPhase: Equatable, Sendable {
     case idle
     case savingCapture
     case mixingAudio
+    case composingVideo
     case summarizing
 
     var title: String {
@@ -19,6 +20,7 @@ enum PostMeetingPhase: Equatable, Sendable {
         case .idle: ""
         case .savingCapture: "Saving recording…"
         case .mixingAudio: "Mixing audio…"
+        case .composingVideo: "Combining video and audio…"
         case .summarizing: "Writing summary…"
         }
     }
@@ -26,9 +28,10 @@ enum PostMeetingPhase: Equatable, Sendable {
     var progress: Double {
         switch self {
         case .idle: 0
-        case .savingCapture: 0.2
-        case .mixingAudio: 0.45
-        case .summarizing: 0.75
+        case .savingCapture: 0.15
+        case .mixingAudio: 0.35
+        case .composingVideo: 0.55
+        case .summarizing: 0.8
         }
     }
 }
@@ -154,6 +157,112 @@ enum Speaker: String, Codable, Sendable, CaseIterable {
         case .others: "Others"
         }
     }
+
+    /// Lane → speaker key before diarization remaps remote turns.
+    var speakerKey: String {
+        switch self {
+        case .you: SpeakerKey.selfKey
+        case .others: SpeakerKey.cluster(1)
+        }
+    }
+}
+
+/// Stable identity for transcript rows: `self`, `cluster:N`, or `profile:<uuid>`.
+enum SpeakerKey {
+    static let selfKey = "self"
+
+    static func cluster(_ index: Int) -> String { "cluster:\(max(1, index))" }
+
+    static func profile(_ id: UUID) -> String { "profile:\(id.uuidString.lowercased())" }
+
+    static func normalize(_ raw: String) -> String {
+        switch raw {
+        case "you", selfKey: return selfKey
+        case "others": return cluster(1)
+        default: return raw
+        }
+    }
+
+    static func isSelf(_ key: String) -> Bool {
+        let normalized = normalize(key)
+        return normalized == selfKey
+    }
+
+    static func clusterIndex(_ key: String) -> Int? {
+        let normalized = normalize(key)
+        guard normalized.hasPrefix("cluster:") else { return nil }
+        return Int(normalized.dropFirst("cluster:".count))
+    }
+
+    static func profileID(_ key: String) -> UUID? {
+        let normalized = normalize(key)
+        guard normalized.hasPrefix("profile:") else { return nil }
+        return UUID(uuidString: String(normalized.dropFirst("profile:".count)))
+    }
+
+    static func fallbackDisplayName(_ key: String) -> String {
+        let normalized = normalize(key)
+        if isSelf(normalized) { return "You" }
+        if let index = clusterIndex(normalized) { return "Speaker \(index)" }
+        if let id = profileID(normalized) { return "Person \(id.uuidString.prefix(4))" }
+        return normalized
+    }
+}
+
+struct LiveAssistSource: Codable, Equatable, Sendable, Identifiable {
+    var id: UUID = UUID()
+    var title: String
+    var url: String
+}
+
+enum LiveAssistKind: String, Codable, Sendable, CaseIterable {
+    case insight
+    case factCheck
+    case research
+    case memory
+
+    var title: String {
+        switch self {
+        case .insight: "Insight"
+        case .factCheck: "Fact-check"
+        case .research: "Research"
+        case .memory: "From past meetings"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .insight: "lightbulb"
+        case .factCheck: "checkmark.shield"
+        case .research: "globe"
+        case .memory: "clock.arrow.circlepath"
+        }
+    }
+}
+
+enum FactCheckVerdict: String, Codable, Sendable {
+    case supported
+    case contested
+    case unclear
+
+    var title: String {
+        switch self {
+        case .supported: "Supported"
+        case .contested: "Contested"
+        case .unclear: "Unclear"
+        }
+    }
+}
+
+struct LiveAssistCard: Identifiable, Codable, Equatable, Sendable {
+    var id: UUID = UUID()
+    var kind: LiveAssistKind
+    var title: String
+    var body: String
+    var sources: [LiveAssistSource] = []
+    var verdict: FactCheckVerdict?
+    var speakerKey: String?
+    var createdAt: Date = .now
 }
 
 enum MeetingKind: String, Codable, Sendable, Equatable {
@@ -202,6 +311,8 @@ struct MeetingCandidate: Equatable, Sendable, Identifiable {
     var windowID: UInt32?
     var isSimulated: Bool
     var calendarEventTitle: String?
+    /// On-screen area in points² — used to prefer the active meeting stage.
+    var pixelArea: CGFloat = 0
 
     var displayName: String {
         let trimmed = windowTitle.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -229,31 +340,91 @@ struct MeetingCandidate: Equatable, Sendable, Identifiable {
             windowTitle: "Simulated meeting",
             windowID: nil,
             isSimulated: true,
-            calendarEventTitle: nil
+            calendarEventTitle: nil,
+            pixelArea: 1_280 * 720
         )
     }
 }
 
 struct LiveSegment: Identifiable, Equatable, Sendable {
     var id: UUID
-    var speaker: Speaker
+    var speakerKey: String
     var text: String
     var start: TimeInterval
     var end: TimeInterval
     var isFinal: Bool
+
+    var isSelf: Bool { SpeakerKey.isSelf(speakerKey) }
+
+    init(
+        id: UUID,
+        speakerKey: String,
+        text: String,
+        start: TimeInterval,
+        end: TimeInterval,
+        isFinal: Bool
+    ) {
+        self.id = id
+        self.speakerKey = SpeakerKey.normalize(speakerKey)
+        self.text = text
+        self.start = start
+        self.end = end
+        self.isFinal = isFinal
+    }
+
+    init(
+        id: UUID,
+        speaker: Speaker,
+        text: String,
+        start: TimeInterval,
+        end: TimeInterval,
+        isFinal: Bool
+    ) {
+        self.init(
+            id: id,
+            speakerKey: speaker.speakerKey,
+            text: text,
+            start: start,
+            end: end,
+            isFinal: isFinal
+        )
+    }
 }
 
 struct ActionItem: Codable, Equatable, Sendable, Identifiable {
-    var id: UUID = UUID()
+    var id: UUID
     var owner: String?
     var text: String
+    var due: String?
+
+    init(id: UUID = UUID(), owner: String? = nil, text: String, due: String? = nil) {
+        self.id = id
+        self.owner = owner
+        self.text = text
+        self.due = due
+    }
+
+    enum CodingKeys: String, CodingKey { case id, owner, text, due }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        owner = try container.decodeIfPresent(String.self, forKey: .owner)
+        text = try container.decode(String.self, forKey: .text)
+        due = try container.decodeIfPresent(String.self, forKey: .due)
+    }
 }
 
 struct MeetingSummary: Codable, Equatable, Sendable {
     var title: String
     var summary: String
+    var notes: [String]
+    var keyPeople: [String]
+    var topics: [String]
     var decisions: [String]
     var actionItems: [ActionItem]
+    var nextSteps: [String]
+    var blockers: [String]
     var openQuestions: [String]
     var quotes: [String]
     var rawText: String?
@@ -261,12 +432,66 @@ struct MeetingSummary: Codable, Equatable, Sendable {
     static let empty = MeetingSummary(
         title: "",
         summary: "",
+        notes: [],
+        keyPeople: [],
+        topics: [],
         decisions: [],
         actionItems: [],
+        nextSteps: [],
+        blockers: [],
         openQuestions: [],
         quotes: [],
         rawText: nil
     )
+
+    enum CodingKeys: String, CodingKey {
+        case title, summary, notes, keyPeople, topics, decisions
+        case actionItems, nextSteps, blockers, openQuestions, quotes, rawText
+    }
+
+    init(
+        title: String,
+        summary: String,
+        notes: [String] = [],
+        keyPeople: [String] = [],
+        topics: [String] = [],
+        decisions: [String],
+        actionItems: [ActionItem],
+        nextSteps: [String] = [],
+        blockers: [String] = [],
+        openQuestions: [String],
+        quotes: [String],
+        rawText: String? = nil
+    ) {
+        self.title = title
+        self.summary = summary
+        self.notes = notes
+        self.keyPeople = keyPeople
+        self.topics = topics
+        self.decisions = decisions
+        self.actionItems = actionItems
+        self.nextSteps = nextSteps
+        self.blockers = blockers
+        self.openQuestions = openQuestions
+        self.quotes = quotes
+        self.rawText = rawText
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        title = try container.decode(String.self, forKey: .title)
+        summary = try container.decode(String.self, forKey: .summary)
+        notes = try container.decodeIfPresent([String].self, forKey: .notes) ?? []
+        keyPeople = try container.decodeIfPresent([String].self, forKey: .keyPeople) ?? []
+        topics = try container.decodeIfPresent([String].self, forKey: .topics) ?? []
+        decisions = try container.decodeIfPresent([String].self, forKey: .decisions) ?? []
+        actionItems = try container.decodeIfPresent([ActionItem].self, forKey: .actionItems) ?? []
+        nextSteps = try container.decodeIfPresent([String].self, forKey: .nextSteps) ?? []
+        blockers = try container.decodeIfPresent([String].self, forKey: .blockers) ?? []
+        openQuestions = try container.decodeIfPresent([String].self, forKey: .openQuestions) ?? []
+        quotes = try container.decodeIfPresent([String].self, forKey: .quotes) ?? []
+        rawText = try container.decodeIfPresent(String.self, forKey: .rawText)
+    }
 }
 
 enum ObserverError: LocalizedError {

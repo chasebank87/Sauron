@@ -33,9 +33,9 @@
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Observer transcribes meetings on-device using Apple Speech. Audio is not sent to Apple or Observer servers.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>Observer can use your calendar to notice when a scheduled meeting is in progress. Calendar access is optional.</string>
+	<string>Observer uses your calendar to show what’s up next and to match live meetings to scheduled events. Choose which calendars to subscribe to in Settings. Calendar access is optional.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Observer can use your calendar to notice when a scheduled meeting is in progress. Calendar access is optional.</string>
+	<string>Observer uses your calendar to show what’s up next and to match live meetings to scheduled events. Choose which calendars to subscribe to in Settings. Calendar access is optional.</string>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>Observer captures meeting audio from apps like Zoom or Meet so it can transcribe other participants locally.</string>
 	<key>NSScreenCaptureUsageDescription</key>

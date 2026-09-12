@@ -1,9 +1,11 @@
 import AppKit
+import QuartzCore
 import SwiftUI
 
 enum PanelPlacement: Sendable {
     case topCenter
     case trailing
+    case leading
     case center
 }
 
@@ -25,7 +27,8 @@ final class GlassPanelController {
         size: CGSize,
         placement: PanelPlacement,
         activates: Bool = false,
-        usesPaneChrome: Bool = true
+        usesPaneChrome: Bool = true,
+        animated: Bool = false
     ) {
         let hosted = AnyView(view.tint(ObserverTheme.accent))
         let wantsNonactivating = !activates
@@ -36,7 +39,12 @@ final class GlassPanelController {
         if let hostingView, let panel {
             hostingView.rootView = hosted
             layout(panel: panel, size: size, placement: placement)
-            order(panel, activates: activates)
+            if animated {
+                animateIn(panel, activates: activates)
+            } else {
+                panel.alphaValue = 1
+                order(panel, activates: activates)
+            }
             return
         }
 
@@ -61,6 +69,8 @@ final class GlassPanelController {
         panel.titlebarAppearsTransparent = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         panel.animationBehavior = .utilityWindow
+        // Inherit System Settings appearance (light/dark) — do not force dark.
+        panel.appearance = nil
 
         let hosting = NSHostingView(rootView: hosted)
         hosting.sizingOptions = [.intrinsicContentSize]
@@ -92,7 +102,12 @@ final class GlassPanelController {
         self.panel = panel
         self.hostingView = hosting
         layout(panel: panel, size: size, placement: placement)
-        order(panel, activates: activates)
+        if animated {
+            animateIn(panel, activates: activates)
+        } else {
+            panel.alphaValue = 1
+            order(panel, activates: activates)
+        }
     }
 
     func close() {
@@ -103,6 +118,43 @@ final class GlassPanelController {
     }
 
     var isVisible: Bool { panel?.isVisible == true }
+
+    private func animateIn(_ panel: NSPanel, activates: Bool) {
+        let finalFrame = panel.frame
+        var startFrame = finalFrame
+        startFrame.origin.y += 18
+        panel.setFrame(startFrame, display: true)
+        panel.alphaValue = 0
+        if let layer = panel.contentView?.layer {
+            layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+            let mid = CGPoint(x: layer.bounds.midX, y: layer.bounds.midY)
+            layer.position = mid
+            layer.transform = CATransform3DMakeScale(0.9, 0.9, 1)
+        }
+        order(panel, activates: activates)
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.48
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            context.allowsImplicitAnimation = true
+            panel.animator().alphaValue = 1
+            panel.animator().setFrame(finalFrame, display: true)
+        }
+
+        if let layer = panel.contentView?.layer {
+            let scale = CASpringAnimation(keyPath: "transform.scale")
+            scale.fromValue = 0.9
+            scale.toValue = 1
+            scale.mass = 0.7
+            scale.stiffness = 180
+            scale.damping = 16
+            scale.duration = scale.settlingDuration
+            scale.fillMode = .forwards
+            scale.isRemovedOnCompletion = false
+            layer.add(scale, forKey: "promptPop")
+            layer.transform = CATransform3DIdentity
+        }
+    }
 
     private func order(_ panel: NSPanel, activates: Bool) {
         if activates {
@@ -128,6 +180,11 @@ final class GlassPanelController {
                 x: visible.maxX - size.width - 22,
                 y: visible.maxY - size.height - 56
             )
+        case .leading:
+            origin = NSPoint(
+                x: visible.minX + 22,
+                y: visible.maxY - size.height - 56
+            )
         case .center:
             origin = NSPoint(
                 x: visible.midX - size.width / 2,
@@ -142,8 +199,9 @@ final class GlassPanelController {
 }
 
 enum GlassChrome {
-    static let promptSize = CGSize(width: 480, height: 510)
+    static let promptSize = CGSize(width: 480, height: 540)
     static let transcriptSize = CGSize(width: 400, height: 620)
+    static let assistSize = CGSize(width: 340, height: 520)
     static let errorSize = CGSize(width: 380, height: 160)
     static let onboardingSize = CGSize(width: 440, height: 660)
 }

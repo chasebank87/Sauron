@@ -125,14 +125,42 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
     }
 
     private func makeVideoFilter(candidate: MeetingCandidate, content: SCShareableContent) throws -> SCContentFilter {
-        if let windowID = candidate.windowID,
+        // Re-pick the best live meeting window (Teams Calendar shells must not win).
+        let liveMatches = content.windows.compactMap { window -> MeetingCandidate? in
+            guard window.isOnScreen else { return nil }
+            let frame = window.frame
+            guard frame.width >= 220, frame.height >= 160 else { return nil }
+            let title = window.title ?? ""
+            let bundle = window.owningApplication?.bundleIdentifier
+            let appName = window.owningApplication?.applicationName
+            guard let kind = MeetingAppCatalog.match(
+                bundleIdentifier: bundle,
+                appName: appName,
+                windowTitle: title
+            ) else { return nil }
+            let bundleID = bundle ?? "unknown"
+            return MeetingCandidate(
+                id: "\(bundleID):\(window.windowID)",
+                kind: kind,
+                appName: appName ?? kind.displayName,
+                bundleIdentifier: bundleID,
+                windowTitle: title,
+                windowID: window.windowID,
+                isSimulated: false,
+                calendarEventTitle: nil,
+                pixelArea: max(frame.width, 1) * max(frame.height, 1)
+            )
+        }
+        let resolved = MeetingWindowPicker.bestContinuing(from: candidate, in: liveMatches) ?? candidate
+
+        if let windowID = resolved.windowID,
            let window = content.windows.first(where: { $0.windowID == windowID }) {
             return SCContentFilter(desktopIndependentWindow: window)
         }
         guard let display = preferredDisplay(in: content) else {
             throw ObserverError.noDisplay
         }
-        if let app = meetingApplication(candidate: candidate, content: content) {
+        if let app = meetingApplication(candidate: resolved, content: content) {
             return SCContentFilter(display: display, including: [app], exceptingWindows: [])
         }
         return SCContentFilter(display: display, excludingWindows: [])
@@ -207,13 +235,22 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
             width = 1280
             height = 720
         }
-        let maxEdge: CGFloat = 1600
+        let maxEdge: CGFloat = 3200
         let longest = max(width, height)
         let scale = longest > maxEdge ? maxEdge / longest : 1
-        configuration.width = Int(width * scale)
-        configuration.height = Int(height * scale)
+        // H.264 requires even dimensions — odd heights produce a stripe / corrupt frames.
+        configuration.width = Self.evenPixelDimension(Int((width * scale).rounded()))
+        configuration.height = Self.evenPixelDimension(Int((height * scale).rounded()))
         configuration.minimumFrameInterval = CMTime(value: 1, timescale: 20)
+        // Prefer sharper text on Retina meeting UIs.
+        configuration.scalesToFit = false
         return configuration
+    }
+
+    /// Macroblock-safe size for H.264 / HEVC (minimum 2, always even).
+    private static func evenPixelDimension(_ value: Int) -> Int {
+        let floored = max(2, value)
+        return floored - (floored % 2)
     }
 
     private func isCompleteFrame(_ sampleBuffer: CMSampleBuffer) -> Bool {
