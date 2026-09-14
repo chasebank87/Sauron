@@ -48,6 +48,7 @@
 		5FC2CEDAB8BA30675FFEE5A4 /* ScreenCaptureAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EBC3BD160FC5C75BDB95D49 /* ScreenCaptureAccess.swift */; };
 		60BC145F8539FE48885A2C26 /* GlobalHotkeyMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707BC17E5CE3C97484E02177 /* GlobalHotkeyMonitor.swift */; };
 		676BCA749D601A0026FA6411 /* AudioSignalMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3B6D748A84893DF9D327B5D /* AudioSignalMonitor.swift */; };
+		67B2FF22BDF9D6B50A333893 /* AudioInputDeviceWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F53ADB8512545A02C501A26 /* AudioInputDeviceWatcher.swift */; };
 		67F5297EC0765D5AE0A4C4D5 /* SwiftData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DBFBB9DA1AA3338C2EAA0EE /* SwiftData.framework */; };
 		691DC3AACC62C23347267954 /* NeuralMeetingDiarizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AA532BA80C7828E5709B9BD /* NeuralMeetingDiarizer.swift */; };
 		6B640DCFF5987C7C281D2D83 /* DashboardInsightsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B4009E38308F7C363D41E6 /* DashboardInsightsTab.swift */; };
@@ -153,6 +154,7 @@
 		6B0316E30DB3E471E39118F5 /* MemoryMCPHandlers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryMCPHandlers.swift; sourceTree = "<group>"; };
 		6B0E6982AFBB133DBE973628 /* MeetingDiarizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDiarizing.swift; sourceTree = "<group>"; };
 		6C6840B3B6B1A3CD5C12FFBD /* MeetingUserNotesEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingUserNotesEditor.swift; sourceTree = "<group>"; };
+		6F53ADB8512545A02C501A26 /* AudioInputDeviceWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioInputDeviceWatcher.swift; sourceTree = "<group>"; };
 		707BC17E5CE3C97484E02177 /* GlobalHotkeyMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyMonitor.swift; sourceTree = "<group>"; };
 		7373580292D5939611ACCB4D /* MeetingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingStore.swift; sourceTree = "<group>"; };
 		7C416F65690F1F4BF23A317B /* MeetingDocumentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDocumentStore.swift; sourceTree = "<group>"; };
@@ -323,6 +325,7 @@
 			isa = PBXGroup;
 			children = (
 				164692D51C8A94E32656A0D1 /* AudioDeviceCatalog.swift */,
+				6F53ADB8512545A02C501A26 /* AudioInputDeviceWatcher.swift */,
 				F4C3ADC0C48A8E1E4D77165E /* AudioPCM.swift */,
 				D3B6D748A84893DF9D327B5D /* AudioSignalMonitor.swift */,
 				DBCFF4BCD9B174875C77DEE4 /* CaptureEngine.swift */,
@@ -572,6 +575,7 @@
 				E2395AF9EF8487C495CBB377 /* AgentProviders.swift in Sources */,
 				41A46147CFD03B03B9B5D524 /* AppState.swift in Sources */,
 				6BE03660B467703C1E75EC4D /* AudioDeviceCatalog.swift in Sources */,
+				67B2FF22BDF9D6B50A333893 /* AudioInputDeviceWatcher.swift in Sources */,
 				48B52484E977C0C718D19E76 /* AudioPCM.swift in Sources */,
 				676BCA749D601A0026FA6411 /* AudioSignalMonitor.swift in Sources */,
 				3243435383D4B412E85AC535 /* BrandMark.swift in Sources */,

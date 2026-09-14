@@ -57,6 +57,10 @@ final class AppState {
     @ObservationIgnored private var hotkeyMonitor: GlobalHotkeyMonitor?
     @ObservationIgnored private var micPriorityIndex = 0
     private(set) var activeMicDisplayName = "System Default"
+    private(set) var activeMicDeviceID = AudioInputDevice.systemDefaultID
+    private(set) var availableMics: [AudioInputDevice] = []
+    @ObservationIgnored private let micDeviceWatcher = AudioInputDeviceWatcher()
+    @ObservationIgnored private var lastKnownDefaultInputUID: String?
 
     var modelContext: ModelContext { modelContainer.mainContext }
 
@@ -282,6 +286,25 @@ final class AppState {
         guard status == .recording else { return }
         capture.toggleMicMute()
         isMicMuted = capture.isMicMuted
+        if isMicMuted {
+            // Muted samples look like silence — don't auto-advance the mic list.
+            audioMonitor.dismissMicWarning()
+        } else {
+            audioMonitor.resetMicProbe()
+        }
+    }
+
+    /// Manual mid-recording mic change (also used by auto-fallback / device watcher).
+    func selectMicrophone(_ device: AudioInputDevice) async {
+        guard status == .recording else { return }
+        do {
+            try await capture.switchMicrophone(to: device.captureDeviceID)
+            applyActiveMicrophone(device)
+            audioMonitor.resetMicProbe()
+            audioMonitor.dismissMicWarning()
+        } catch {
+            lastError = "Could not switch microphone to \(device.name): \(error.localizedDescription)"
+        }
     }
 
     func stopRecording() {
@@ -506,8 +529,11 @@ final class AppState {
         status = .recording
         let priority = AudioDeviceCatalog.resolvedPriority(savedIDs: settings.micPriorityIDs)
         micPriorityIndex = 0
-        activeMicDisplayName = priority.first?.name ?? "System Default"
+        availableMics = priority
+        applyActiveMicrophone(priority.first ?? .systemDefault)
+        lastKnownDefaultInputUID = AVCaptureDevice.default(for: .audio)?.uniqueID
         audioMonitor.start(remoteSource: promptAudioSource)
+        startMicDeviceWatcher()
         SpeakerProfileStore.shared.attach(context: modelContext)
         diarizer.setPreferNeural(settings.neuralDiarizationEnabled)
         if settings.neuralDiarizationEnabled || settings.enhanceTranscriptEnabled {
@@ -537,6 +563,7 @@ final class AppState {
             try? modelContext.save()
             showTranscript()
         } catch {
+            stopMicDeviceWatcher()
             audioMonitor.stop()
             diarizer.stop()
             _ = liveAssistant.stop()
@@ -557,6 +584,7 @@ final class AppState {
             postMeetingPhase = .idle
             isSummarizing = false
         }
+        stopMicDeviceWatcher()
         detector.clearRecordingWatch()
         audioMonitor.stop()
 
@@ -773,19 +801,72 @@ final class AppState {
     }
 
     private func advanceMicrophoneFallback() async {
+        guard status == .recording, !isMicMuted else { return }
+        availableMics = AudioDeviceCatalog.resolvedPriority(savedIDs: settings.micPriorityIDs)
+        let start = micPriorityIndex + 1
+        guard start < availableMics.count else { return }
+        for index in start..<availableMics.count {
+            let next = availableMics[index]
+            guard AudioDeviceCatalog.isAvailable(id: next.id) else { continue }
+            await selectMicrophone(next)
+            return
+        }
+    }
+
+    private func startMicDeviceWatcher() {
+        micDeviceWatcher.onChange = { [weak self] in
+            Task { @MainActor in
+                await self?.handleMicrophoneDeviceChange()
+            }
+        }
+        micDeviceWatcher.start()
+    }
+
+    private func stopMicDeviceWatcher() {
+        micDeviceWatcher.onChange = nil
+        micDeviceWatcher.stop()
+    }
+
+    private func refreshAvailableMics() {
+        availableMics = AudioDeviceCatalog.resolvedPriority(savedIDs: settings.micPriorityIDs)
+        // Keep active display name fresh (System Default suffix tracks OS default).
+        if let active = availableMics.first(where: { $0.id == activeMicDeviceID }) {
+            activeMicDisplayName = active.name
+            if let idx = availableMics.firstIndex(where: { $0.id == active.id }) {
+                micPriorityIndex = idx
+            }
+        }
+    }
+
+    private func applyActiveMicrophone(_ device: AudioInputDevice) {
+        activeMicDeviceID = device.id
+        activeMicDisplayName = device.name
+        availableMics = AudioDeviceCatalog.resolvedPriority(savedIDs: settings.micPriorityIDs)
+        if let idx = availableMics.firstIndex(where: { $0.id == device.id }) {
+            micPriorityIndex = idx
+        }
+    }
+
+    private func handleMicrophoneDeviceChange() async {
         guard status == .recording else { return }
-        let priority = AudioDeviceCatalog.resolvedPriority(savedIDs: settings.micPriorityIDs)
-        let nextIndex = micPriorityIndex + 1
-        guard nextIndex < priority.count else { return }
-        let next = priority[nextIndex]
-        do {
-            try await capture.switchMicrophone(to: next.captureDeviceID)
-            micPriorityIndex = nextIndex
-            activeMicDisplayName = next.name
-            audioMonitor.resetMicProbe()
-            audioMonitor.dismissMicWarning()
-        } catch {
-            lastError = "Could not switch microphone to \(next.name): \(error.localizedDescription)"
+        refreshAvailableMics()
+
+        let defaultUID = AVCaptureDevice.default(for: .audio)?.uniqueID
+        let defaultChanged = defaultUID != lastKnownDefaultInputUID
+        lastKnownDefaultInputUID = defaultUID
+
+        let activeStillPresent = AudioDeviceCatalog.isAvailable(id: activeMicDeviceID)
+        if !activeStillPresent {
+            // List already dropped the dead device; pick from its old slot, then wrap.
+            let start = min(micPriorityIndex, availableMics.count)
+            let ordered = Array(availableMics[start...]) + Array(availableMics[..<start])
+            await selectMicrophone(ordered.first ?? .systemDefault)
+            return
+        }
+
+        // Using System Default: rebind when the OS default input changes so SCK follows.
+        if activeMicDeviceID == AudioInputDevice.systemDefaultID, defaultChanged {
+            await selectMicrophone(.systemDefault)
         }
     }
 
@@ -836,6 +917,7 @@ final class AppState {
     private func fail(_ error: Error) {
         errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         showErrorPanel()
+        stopMicDeviceWatcher()
         detector.clearRecordingWatch()
         audioMonitor.stop()
         diarizer.stop()
