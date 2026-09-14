@@ -8,8 +8,9 @@ import Foundation
 ///
 /// FaceTime (and Continuity phone) call audio is produced by system daemons like
 /// `avconferenced`, which ScreenCaptureKit cannot see. A stereo global process tap
-/// hears that mix; the microphone is captured separately (Apple VoiceProcessing
-/// when echo cancellation starts, otherwise ScreenCaptureKit). Buffers are stamped
+/// hears that mix; the microphone is captured separately via ScreenCaptureKit.
+/// When echo cancellation is on, this far-end stream is also fed to Speex so
+/// speaker bleed can be removed from the mic (“You”) lane. Buffers are stamped
 /// with host time so software AEC can align them with the mic timestamps.
 final class SystemAudioTap: @unchecked Sendable {
     var onBuffer: ((CMSampleBuffer) -> Void)?

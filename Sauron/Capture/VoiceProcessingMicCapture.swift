@@ -6,14 +6,11 @@ import Foundation
 
 /// Microphone capture through Apple VoiceProcessing IO.
 ///
-/// Speex AEC is sequential 10 ms DSP — it does not map onto the GPU or ANE.
-/// VoiceProcessing runs Apple’s echo canceller in the audio server (`coreaudiod`),
-/// not in Sauron’s process. System audio (Others) stays on ScreenCaptureKit /
-/// the Core Audio process tap.
-///
-/// Ducking is forced to minimum and VPIO output is muted so Zoom/Teams keep
-/// playing and remain capturable. If the unit cannot start (another app owns it),
-/// `CaptureEngine` falls back to the Speex path.
+/// Kept for experiments / possible future duplex use. Meeting recording does **not**
+/// use this path: Sauron does not render remote audio through VPIO, so the unit has
+/// no far-end reference and tends to duck Zoom/Teams instead of cancelling echo.
+/// Production AEC is Speex with captured system audio as the reference
+/// (`AcousticEchoCanceller` via `CaptureEngine`).
 final class VoiceProcessingMicCapture: @unchecked Sendable {
     var onBuffer: ((CMSampleBuffer) -> Void)?
 

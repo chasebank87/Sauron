@@ -34,8 +34,8 @@ targets:
       base:
         PRODUCT_NAME: Sauron
         PRODUCT_BUNDLE_IDENTIFIER: app.sauron.Sauron
-        MARKETING_VERSION: 0.1.8
-        CURRENT_PROJECT_VERSION: 9
+        MARKETING_VERSION: 0.1.9
+        CURRENT_PROJECT_VERSION: 10
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_FILE: Sauron/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: Sauron
@@ -88,6 +88,10 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: app.sauron.SauronTests
         GENERATE_INFOPLIST_FILE: YES
         MACOSX_DEPLOYMENT_TARGET: "26.0"
+        HEADER_SEARCH_PATHS:
+          - "$(SRCROOT)/Sauron/Capture/AEC"
+          - "$(SRCROOT)/Sauron/Capture/AEC/speex/include"
+          - "$(SRCROOT)/Sauron/Capture/AEC/speex/lib"
 schemes:
   Sauron:
     build:

@@ -50,8 +50,8 @@ final class SettingsStore {
         didSet { defaults.set(meetingAppAudioOnly, forKey: Keys.meetingAppAudio) }
     }
 
-    /// When true, speaker playback is cancelled from the mic (Apple VoiceProcessing
-    /// when available, Speex otherwise). Default on.
+    /// When true, Speex subtracts captured system/meeting playback from the mic
+    /// (“You”) track. Default on. Headphones remain the most reliable fallback.
     var echoCancellationEnabled: Bool {
         didSet { defaults.set(echoCancellationEnabled, forKey: Keys.echoCancellation) }
     }

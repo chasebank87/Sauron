@@ -3,12 +3,12 @@ import CoreMedia
 import Darwin
 import Foundation
 
-/// SpeexDSP MDF acoustic echo canceller (software fallback).
+/// SpeexDSP MDF acoustic echo canceller for meeting recording.
 ///
-/// Preferred path is Apple VoiceProcessing IO (`VoiceProcessingMicCapture`),
-/// which runs AEC outside Sauron. This engine is used when that unit cannot
-/// start, so live "You" remains the local talker only — not speaker bleed.
-/// Far-end reference is the already-captured system / meeting-app audio.
+/// Far-end reference is captured system / meeting-app audio (SCK or process tap).
+/// Near-end is the microphone. VoiceProcessingIO is not used here — Sauron does not
+/// render remote audio through a duplex unit, so Apple’s canceller has no playback
+/// reference and would only duck other apps.
 final class AcousticEchoCanceller: @unchecked Sendable {
     static let processSampleRate = 16_000
     static let frameSize = 160
@@ -197,6 +197,7 @@ final class AcousticEchoCanceller: @unchecked Sendable {
 
     /// True when this frame is meeting audio on the speakers, not the local talker.
     /// Used so live "You" dictation does not caption playback from the laptop speakers.
+    /// Conservative on double-talk: keep residual when it still looks like local speech.
     /// System/"Others" transcription is unchanged (separate lane).
     static func isSpeakerOnlyEcho(near: [Int16], far: [Int16], cancelled: [Int16]) -> Bool {
         let farRMS = rms(far)
@@ -207,12 +208,19 @@ final class AcousticEchoCanceller: @unchecked Sendable {
         let farCorr = abs(normalizedCorrelation(near, far))
         let residualCorr = abs(normalizedCorrelation(cancelled, far))
 
-        if outRMS < nearRMS * 0.35, outRMS < farRMS * 0.55 {
+        // Double-talk: residual still strong and not locked to far-end — keep You.
+        if outRMS > 1_800, outRMS > farRMS * 0.28, residualCorr < 0.42 {
+            return false
+        }
+
+        // Clear cancel: residual much quieter than both near and far.
+        if outRMS < nearRMS * 0.28, outRMS < farRMS * 0.45 {
             return true
         }
-        if residualCorr > 0.32 || farCorr > 0.45 {
-            let localSpeech = outRMS > 1_400 && outRMS > farRMS * 0.22 && residualCorr < 0.55
-            return !localSpeech
+
+        // Near still tracks far and residual stays quiet — speaker bleed only.
+        if farCorr > 0.5, residualCorr > 0.38, outRMS < farRMS * 0.35 {
+            return true
         }
         return false
     }

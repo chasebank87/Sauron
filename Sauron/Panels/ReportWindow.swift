@@ -30,6 +30,8 @@ struct ReportDetailView: View {
     @State private var assigningKey: String?
     @State private var playback = ReportPlaybackController()
     @State private var editingTranscript = false
+    /// Sorted once; refreshed only when segment identity/count changes — never inside body layout.
+    @State private var sortedSegments: [TranscriptSegment] = []
     @Environment(\.colorScheme) private var colorScheme
 
     private var speakerStore: SpeakerProfileStore { SpeakerProfileStore.shared }
@@ -42,10 +44,6 @@ struct ReportDetailView: View {
             if li != ri { return li < ri }
             return speakerStore.displayName(for: lhs) < speakerStore.displayName(for: rhs)
         }
-    }
-
-    private var sortedSegments: [TranscriptSegment] {
-        meeting.segments.sorted { $0.start < $1.start }
     }
 
     var body: some View {
@@ -89,7 +87,21 @@ struct ReportDetailView: View {
         }
         .onAppear {
             speakerStore.attach(context: appState.modelContext)
+            refreshSortedSegments()
         }
+        .onChange(of: meeting.segments.count) { _, _ in
+            refreshSortedSegments()
+        }
+        .onChange(of: meeting.status) { _, _ in
+            refreshSortedSegments()
+        }
+        .onChange(of: appState.mediaReadyToken) { _, _ in
+            refreshSortedSegments()
+        }
+    }
+
+    private func refreshSortedSegments() {
+        sortedSegments = meeting.segments.sorted { $0.start < $1.start }
     }
 
     @ViewBuilder
@@ -368,13 +380,8 @@ struct ReportDetailView: View {
                 HStack(spacing: 8) {
                     Label("Transcript", systemImage: "text.bubble")
                         .font(.headline)
-                    if meeting.hasPlayableMedia, playback.isPlaying || playback.currentTime > 0 {
-                        Text(playback.currentTime.observerClock)
-                            .font(.caption.monospacedDigit().weight(.medium))
-                            .foregroundStyle(SauronTheme.accent)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Capsule().fill(SauronTheme.accent.opacity(0.12)))
+                    if meeting.hasPlayableMedia {
+                        ReportPlaybackClockBadge(playback: playback)
                     }
                     Spacer(minLength: 0)
                     if !editingTranscript {
@@ -624,6 +631,41 @@ struct ReportDetailView: View {
     }
 }
 
+/// Lightweight timing row for playback ↔ transcript sync (no SwiftData access on the clock path).
+struct ReportSegmentTiming: Equatable, Sendable {
+    let id: UUID
+    let start: TimeInterval
+    let end: TimeInterval
+}
+
+enum ReportTranscriptSync {
+    /// Returns the segment that should highlight at playback time `t`.
+    static func activeSegmentID(at t: TimeInterval, in segments: [ReportSegmentTiming]) -> UUID? {
+        guard !segments.isEmpty else { return nil }
+        if let exact = segments.first(where: { t >= $0.start && t <= max($0.end, $0.start + 0.05) }) {
+            return exact.id
+        }
+        let started = segments.filter { $0.start <= t }
+        return started.last?.id ?? segments.first?.id
+    }
+}
+
+/// Isolates `currentTime` observation so the large report tree is not invalidated every tick.
+private struct ReportPlaybackClockBadge: View {
+    @Bindable var playback: ReportPlaybackController
+
+    var body: some View {
+        if playback.isPlaying || playback.currentTime > 0 {
+            Text(playback.currentTime.observerClock)
+                .font(.caption.monospacedDigit().weight(.medium))
+                .foregroundStyle(SauronTheme.accent)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Capsule().fill(SauronTheme.accent.opacity(0.12)))
+        }
+    }
+}
+
 /// Shared playback clock for syncing the report transcript to video/audio.
 @Observable
 @MainActor
@@ -639,24 +681,26 @@ final class ReportPlaybackController {
     @ObservationIgnored private var timeObserver: Any?
     @ObservationIgnored private var rateObservation: NSKeyValueObservation?
     @ObservationIgnored private var pendingSeek: TimeInterval?
-    @ObservationIgnored private var segmentsForSync: [TranscriptSegment] = []
+    @ObservationIgnored private var segmentsForSync: [ReportSegmentTiming] = []
 
     func updateSegments(_ segments: [TranscriptSegment]) {
-        segmentsForSync = segments
+        segmentsForSync = segments.map {
+            ReportSegmentTiming(id: $0.id, start: $0.start, end: $0.end)
+        }
         refreshActiveSegment()
     }
 
     func attach(_ player: AVPlayer) {
         detach()
         self.player = player
-        let interval = CMTime(seconds: 0.05, preferredTimescale: 600)
+        // ~4 Hz is enough for clock + segment highlight; 50ms was thrashing the report UI.
+        let interval = CMTime(seconds: 0.25, preferredTimescale: 600)
         timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             Task { @MainActor in
                 guard let self else { return }
                 let seconds = time.seconds
                 guard seconds.isFinite else { return }
                 self.currentTime = max(0, seconds)
-                self.isPlaying = player.rate > 0
                 self.refreshActiveSegment()
             }
         }
@@ -705,21 +749,11 @@ final class ReportPlaybackController {
         refreshActiveSegment()
     }
 
-    func activeSegmentID(in segments: [TranscriptSegment]) -> UUID? {
-        Self.resolveActiveID(at: currentTime, in: segments)
-    }
-
     private func refreshActiveSegment() {
-        activeSegmentID = Self.resolveActiveID(at: currentTime, in: segmentsForSync)
-    }
-
-    private static func resolveActiveID(at t: TimeInterval, in segments: [TranscriptSegment]) -> UUID? {
-        guard !segments.isEmpty else { return nil }
-        if let exact = segments.first(where: { t >= $0.start && t <= max($0.end, $0.start + 0.05) }) {
-            return exact.id
+        let newID = ReportTranscriptSync.activeSegmentID(at: currentTime, in: segmentsForSync)
+        if activeSegmentID != newID {
+            activeSegmentID = newID
         }
-        let started = segments.filter { $0.start <= t }
-        return started.last?.id ?? segments.first?.id
     }
 }
 
@@ -784,7 +818,7 @@ private struct SyncedTranscriptList: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 10) {
                     ForEach(segments, id: \.id) { segment in
-                        let active = (playback.activeSegmentID ?? playback.activeSegmentID(in: segments)) == segment.id
+                        let active = playback.activeSegmentID == segment.id
                         SyncedTranscriptBubble(
                             segment: segment,
                             name: displayName(segment.speakerKey),
@@ -809,7 +843,7 @@ private struct SyncedTranscriptList: View {
                 playback.updateSegments(segments)
                 scrollToActive(proxy: proxy, force: true)
             }
-            .onChange(of: segments.map(\.id)) { _, _ in
+            .onChange(of: segments.count) { _, _ in
                 playback.updateSegments(segments)
             }
             .onChange(of: playback.activeSegmentID) { _, _ in
@@ -821,16 +855,12 @@ private struct SyncedTranscriptList: View {
             .onChange(of: playback.followTranscript) { _, enabled in
                 if enabled { scrollToActive(proxy: proxy, force: true) }
             }
-            .onChange(of: playback.currentTime) { _, _ in
-                // Belt-and-suspenders if activeSegmentID observation misses a tick.
-                scrollToActive(proxy: proxy, force: false)
-            }
         }
     }
 
     private func scrollToActive(proxy: ScrollViewProxy, force: Bool) {
         guard playback.followTranscript else { return }
-        guard let id = playback.activeSegmentID ?? playback.activeSegmentID(in: segments) else { return }
+        guard let id = playback.activeSegmentID else { return }
         guard force || id != lastScrolledID else { return }
         lastScrolledID = id
         withAnimation(.easeInOut(duration: 0.25)) {

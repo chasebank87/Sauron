@@ -1337,6 +1337,11 @@ final class EchoCancellationSettingsTests: XCTestCase {
         settings.echoCancellationEnabled = false
         XCTAssertFalse(settings.echoCancellationEnabled)
     }
+
+    func testEchoOnUsesSoftwareReferencePathNotVoiceProcessing() {
+        XCTAssertTrue(CaptureEngine.usesSoftwareEchoCancellation(true))
+        XCTAssertFalse(CaptureEngine.usesSoftwareEchoCancellation(false))
+    }
 }
 
 final class AudioDeviceCatalogCoreAudioTests: XCTestCase {
@@ -1355,9 +1360,10 @@ final class MediaEncodePolicyTests: XCTestCase {
         )
         XCTAssertEqual(properties[kVTCompressionPropertyKey_RealTime as String] as? Bool, true)
         XCTAssertEqual(properties[kVTCompressionPropertyKey_AllowFrameReordering as String] as? Bool, false)
-        let spec = properties[kVTCompressionPropertyKey_EncoderSpecification as String] as? [String: Any]
         XCTAssertEqual(
-            spec?[kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder as String] as? Bool,
+            MediaEncodePolicy.videoEncoderSpecification[
+                kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder as String
+            ] as? Bool,
             true
         )
         XCTAssertEqual(MediaEncodePolicy.capturePixelFormat, kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)
@@ -1367,5 +1373,29 @@ final class MediaEncodePolicyTests: XCTestCase {
         let input = (0..<480).map { Float($0) }
         let down = AudioPCM.resample(input, from: 48_000, to: 16_000)
         XCTAssertEqual(down.count, 160)
+    }
+}
+
+final class ReportTranscriptSyncTests: XCTestCase {
+    func testActiveSegmentPrefersContainingRange() {
+        let a = ReportSegmentTiming(id: UUID(), start: 0, end: 2)
+        let b = ReportSegmentTiming(id: UUID(), start: 2, end: 5)
+        let c = ReportSegmentTiming(id: UUID(), start: 5, end: 8)
+        let segments = [a, b, c]
+
+        XCTAssertEqual(ReportTranscriptSync.activeSegmentID(at: 1.5, in: segments), a.id)
+        XCTAssertEqual(ReportTranscriptSync.activeSegmentID(at: 3.0, in: segments), b.id)
+        XCTAssertEqual(ReportTranscriptSync.activeSegmentID(at: 7.0, in: segments), c.id)
+    }
+
+    func testActiveSegmentFallsBackToLastStarted() {
+        let a = ReportSegmentTiming(id: UUID(), start: 0, end: 1)
+        let b = ReportSegmentTiming(id: UUID(), start: 3, end: 4)
+        let segments = [a, b]
+
+        // Gap between segments — highlight the last one that has started.
+        XCTAssertEqual(ReportTranscriptSync.activeSegmentID(at: 2.0, in: segments), a.id)
+        XCTAssertEqual(ReportTranscriptSync.activeSegmentID(at: 10.0, in: segments), b.id)
+        XCTAssertEqual(ReportTranscriptSync.activeSegmentID(at: -1.0, in: segments), a.id)
     }
 }

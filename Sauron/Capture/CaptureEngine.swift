@@ -28,8 +28,6 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
     private var audioSource: CaptureAudioSource = .system
     private var microphoneDeviceID: String?
     private var echoCanceller: AcousticEchoCanceller?
-    private var voiceMic: VoiceProcessingMicCapture?
-    private var usesVoiceProcessingMic = false
     private var isStopping = false
     private var micMuted = false
 
@@ -37,6 +35,10 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
     var micPath: String? { writer?.micURL?.path }
     var systemPath: String? { writer?.systemURL?.path }
     var activeMicrophoneDeviceID: String? { microphoneDeviceID }
+
+    /// Recorder AEC path: Speex with system/meeting capture as far-end reference.
+    /// VoiceProcessingIO is not used — Sauron does not play remote audio through a duplex unit.
+    static func usesSoftwareEchoCancellation(_ enabled: Bool) -> Bool { enabled }
 
     func start(
         candidate: MeetingCandidate,
@@ -53,16 +55,14 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         usesCoreAudioSystemTap = includeAudio && candidate.kind.needsCoreAudioSystemTap
         self.audioSource = usesCoreAudioSystemTap ? .system : audioSource
         self.microphoneDeviceID = microphoneDeviceID
-        usesVoiceProcessingMic = false
         echoCanceller = nil
         isStopping = false
         writer = MediaWriter(folder: folder, includeVideo: includeVideo, includeAudio: includeAudio)
 
-        if includeAudio, echoCancellation {
-            tryStartVoiceProcessingMic()
-            if !usesVoiceProcessingMic {
-                echoCanceller = AcousticEchoCanceller()
-            }
+        if includeAudio, Self.usesSoftwareEchoCancellation(echoCancellation) {
+            // Far-end = captured system/meeting playback (ingestFarEnd). Near-end = SCK mic.
+            // Do not start VoiceProcessingIO: it ducks other apps and has no playback reference.
+            echoCanceller = AcousticEchoCanceller()
         }
 
         let content: SCShareableContent
@@ -73,7 +73,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         }
 
         let videoFilter = try makeVideoFilter(candidate: candidate, content: content, target: videoTarget)
-        let captureSCKMic = includeAudio && !usesVoiceProcessingMic
+        let captureSCKMic = includeAudio
         let captureSystemViaSCK = includeAudio && !usesCoreAudioSystemTap
 
         if captureSCKMic || captureSystemViaSCK {
@@ -147,10 +147,6 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         guard includeAudio else { return }
         echoCanceller?.reset()
         microphoneDeviceID = deviceID
-        if usesVoiceProcessingMic, let voiceMic {
-            try voiceMic.setDeviceUID(deviceID)
-            return
-        }
         guard let audioStream else { return }
         let configuration = makeAudioConfiguration(
             microphoneDeviceID: deviceID,
@@ -162,10 +158,10 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
 
     /// Toggle mic mute during an active capture. When muted, mic samples are
     /// dropped from the writer and from downstream callbacks (monitor, diarizer,
-    /// transcription). System audio keeps flowing.
+    /// transcription). System audio keeps flowing. Speex keeps adapting on muted
+    /// near-end so unmuting does not dump a burst of echo.
     func toggleMicMute() {
         micMuted.toggle()
-        voiceMic?.setInputMuted(micMuted)
         onMicMuteChanged?(micMuted)
     }
 
@@ -176,15 +172,11 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         let video = videoStream
         let audio = audioStream
         let tap = systemTap
-        let mic = voiceMic
         videoStream = nil
         audioStream = nil
         systemTap = nil
-        voiceMic = nil
-        usesVoiceProcessingMic = false
         echoCanceller = nil
         tap?.stop()
-        mic?.stop()
         if let video {
             try? await video.stopCapture()
         }
@@ -207,7 +199,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
             writer?.appendSystem(sampleBuffer)
             onSystemAudio?(sampleBuffer)
         case .microphone:
-            guard includeAudio, !usesVoiceProcessingMic else { return }
+            guard includeAudio else { return }
             // Keep AEC adapted while muted so unmuting doesn't dump a burst of echo.
             // Writer + live You captions share this cancelled mic. Live Others still
             // come from system audio (onSystemAudio), not this lane.
@@ -230,31 +222,6 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
             audioStream = nil
         }
         onCaptureInterrupted?(error)
-    }
-
-    private func tryStartVoiceProcessingMic() {
-        let capture = VoiceProcessingMicCapture()
-        capture.onBuffer = { [weak self] sampleBuffer in
-            self?.handleVoiceMic(sampleBuffer)
-        }
-        do {
-            try capture.start(deviceUID: microphoneDeviceID)
-            voiceMic = capture
-            usesVoiceProcessingMic = true
-        } catch {
-            capture.stop()
-            usesVoiceProcessingMic = false
-        }
-    }
-
-    private func handleVoiceMic(_ sampleBuffer: CMSampleBuffer) {
-        micQueue.async { [weak self] in
-            guard let self, self.includeAudio, !self.isStopping else { return }
-            if !self.isMicMuted {
-                self.writer?.appendMic(sampleBuffer)
-                self.onMicAudio?(sampleBuffer)
-            }
-        }
     }
 
     private func startAudioStream(
@@ -389,7 +356,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         configuration.capturesAudio = captureSystemViaSCK
         configuration.excludesCurrentProcessAudio = true
         configuration.captureMicrophone = captureMicrophone
-        // Speaker bleed is removed by VoiceProcessing IO, or Speex when that unit is busy.
+        // Speaker bleed is removed by Speex using this stream’s system audio as far-end.
         if captureMicrophone, let microphoneDeviceID, !microphoneDeviceID.isEmpty {
             configuration.microphoneCaptureDeviceID = microphoneDeviceID
         }
