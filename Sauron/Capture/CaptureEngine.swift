@@ -28,6 +28,8 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
     private var audioSource: CaptureAudioSource = .system
     private var microphoneDeviceID: String?
     private var echoCanceller: AcousticEchoCanceller?
+    private var voiceMic: VoiceProcessingMicCapture?
+    private var usesVoiceProcessingMic = false
     private var isStopping = false
     private var micMuted = false
 
@@ -51,9 +53,17 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         usesCoreAudioSystemTap = includeAudio && candidate.kind.needsCoreAudioSystemTap
         self.audioSource = usesCoreAudioSystemTap ? .system : audioSource
         self.microphoneDeviceID = microphoneDeviceID
-        echoCanceller = includeAudio && echoCancellation ? AcousticEchoCanceller() : nil
+        usesVoiceProcessingMic = false
+        echoCanceller = nil
         isStopping = false
         writer = MediaWriter(folder: folder, includeVideo: includeVideo, includeAudio: includeAudio)
+
+        if includeAudio, echoCancellation {
+            tryStartVoiceProcessingMic()
+            if !usesVoiceProcessingMic {
+                echoCanceller = AcousticEchoCanceller()
+            }
+        }
 
         let content: SCShareableContent
         do {
@@ -63,68 +73,89 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         }
 
         let videoFilter = try makeVideoFilter(candidate: candidate, content: content, target: videoTarget)
-        let audioFilter = try makeAudioFilter(
-            candidate: candidate,
-            content: content,
-            source: self.audioSource
-        )
+        let captureSCKMic = includeAudio && !usesVoiceProcessingMic
+        let captureSystemViaSCK = includeAudio && !usesCoreAudioSystemTap
 
-        if includeAudio {
-            let audioConfiguration = makeAudioConfiguration(
-                microphoneDeviceID: microphoneDeviceID,
-                captureSystemViaSCK: !usesCoreAudioSystemTap
+        if captureSCKMic || captureSystemViaSCK {
+            try await startAudioStream(
+                candidate: candidate,
+                content: content,
+                captureMicrophone: captureSCKMic,
+                captureSystemViaSCK: captureSystemViaSCK
             )
-            let stream = SCStream(filter: audioFilter, configuration: audioConfiguration, delegate: self)
-            if !usesCoreAudioSystemTap {
-                try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: systemQueue)
-            }
-            try stream.addStreamOutput(self, type: .microphone, sampleHandlerQueue: micQueue)
-            try await stream.startCapture()
-            audioStream = stream
+        }
 
-            if usesCoreAudioSystemTap {
-                let tap = SystemAudioTap()
-                tap.onBuffer = { [weak self] sampleBuffer in
-                    guard let self, self.includeAudio else { return }
-                    self.echoCanceller?.ingestFarEnd(sampleBuffer)
-                    self.writer?.appendSystem(sampleBuffer)
-                    self.onSystemAudio?(sampleBuffer)
-                }
-                do {
-                    try tap.start()
-                    systemTap = tap
-                } catch {
-                    // Fall back to SCK system audio rather than failing the whole recording.
-                    usesCoreAudioSystemTap = false
-                    try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: systemQueue)
-                    try await stream.updateConfiguration(
+        if includeAudio, usesCoreAudioSystemTap {
+            let tap = SystemAudioTap()
+            tap.onBuffer = { [weak self] sampleBuffer in
+                guard let self, self.includeAudio else { return }
+                self.echoCanceller?.ingestFarEnd(sampleBuffer)
+                self.writer?.appendSystem(sampleBuffer)
+                self.onSystemAudio?(sampleBuffer)
+            }
+            do {
+                try tap.start()
+                systemTap = tap
+            } catch {
+                // Fall back to SCK system audio rather than failing the whole recording.
+                usesCoreAudioSystemTap = false
+                if let audioStream {
+                    try audioStream.addStreamOutput(self, type: .audio, sampleHandlerQueue: systemQueue)
+                    try await audioStream.updateConfiguration(
                         makeAudioConfiguration(
                             microphoneDeviceID: microphoneDeviceID,
-                            captureSystemViaSCK: true
+                            captureSystemViaSCK: true,
+                            captureMicrophone: captureSCKMic
                         )
                     )
-                    onFailure?(error)
+                } else {
+                    try await startAudioStream(
+                        candidate: candidate,
+                        content: content,
+                        captureMicrophone: captureSCKMic,
+                        captureSystemViaSCK: true
+                    )
                 }
+                onFailure?(error)
             }
         }
 
         if includeVideo {
             let videoConfiguration = makeVideoConfiguration(filter: videoFilter, content: content)
-            let stream = SCStream(filter: videoFilter, configuration: videoConfiguration, delegate: self)
-            try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: videoQueue)
-            try await stream.startCapture()
-            videoStream = stream
+            do {
+                videoStream = try await startVideoStream(filter: videoFilter, configuration: videoConfiguration)
+            } catch {
+                var fallback = videoConfiguration
+                fallback.pixelFormat = MediaEncodePolicy.capturePixelFormatFallback
+                videoStream = try await startVideoStream(filter: videoFilter, configuration: fallback)
+            }
         }
+    }
+
+    private func startVideoStream(
+        filter: SCContentFilter,
+        configuration: SCStreamConfiguration
+    ) async throws -> SCStream {
+        let stream = SCStream(filter: filter, configuration: configuration, delegate: self)
+        try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: videoQueue)
+        try await stream.startCapture()
+        return stream
     }
 
     /// Switch mic mid-recording using the priority fallback list.
     func switchMicrophone(to deviceID: String?) async throws {
-        guard includeAudio, let audioStream else { return }
+        guard includeAudio else { return }
         echoCanceller?.reset()
         microphoneDeviceID = deviceID
+        if usesVoiceProcessingMic, let voiceMic {
+            try voiceMic.setDeviceUID(deviceID)
+            return
+        }
+        guard let audioStream else { return }
         let configuration = makeAudioConfiguration(
             microphoneDeviceID: deviceID,
-            captureSystemViaSCK: !usesCoreAudioSystemTap
+            captureSystemViaSCK: !usesCoreAudioSystemTap,
+            captureMicrophone: true
         )
         try await audioStream.updateConfiguration(configuration)
     }
@@ -134,6 +165,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
     /// transcription). System audio keeps flowing.
     func toggleMicMute() {
         micMuted.toggle()
+        voiceMic?.setInputMuted(micMuted)
         onMicMuteChanged?(micMuted)
     }
 
@@ -144,11 +176,15 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         let video = videoStream
         let audio = audioStream
         let tap = systemTap
+        let mic = voiceMic
         videoStream = nil
         audioStream = nil
         systemTap = nil
+        voiceMic = nil
+        usesVoiceProcessingMic = false
         echoCanceller = nil
         tap?.stop()
+        mic?.stop()
         if let video {
             try? await video.stopCapture()
         }
@@ -171,7 +207,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
             writer?.appendSystem(sampleBuffer)
             onSystemAudio?(sampleBuffer)
         case .microphone:
-            guard includeAudio else { return }
+            guard includeAudio, !usesVoiceProcessingMic else { return }
             // Keep AEC adapted while muted so unmuting doesn't dump a burst of echo.
             // Writer + live You captions share this cancelled mic. Live Others still
             // come from system audio (onSystemAudio), not this lane.
@@ -194,6 +230,58 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
             audioStream = nil
         }
         onCaptureInterrupted?(error)
+    }
+
+    private func tryStartVoiceProcessingMic() {
+        let capture = VoiceProcessingMicCapture()
+        capture.onBuffer = { [weak self] sampleBuffer in
+            self?.handleVoiceMic(sampleBuffer)
+        }
+        do {
+            try capture.start(deviceUID: microphoneDeviceID)
+            voiceMic = capture
+            usesVoiceProcessingMic = true
+        } catch {
+            capture.stop()
+            usesVoiceProcessingMic = false
+        }
+    }
+
+    private func handleVoiceMic(_ sampleBuffer: CMSampleBuffer) {
+        micQueue.async { [weak self] in
+            guard let self, self.includeAudio, !self.isStopping else { return }
+            if !self.isMicMuted {
+                self.writer?.appendMic(sampleBuffer)
+                self.onMicAudio?(sampleBuffer)
+            }
+        }
+    }
+
+    private func startAudioStream(
+        candidate: MeetingCandidate,
+        content: SCShareableContent,
+        captureMicrophone: Bool,
+        captureSystemViaSCK: Bool
+    ) async throws {
+        let audioFilter = try makeAudioFilter(
+            candidate: candidate,
+            content: content,
+            source: audioSource
+        )
+        let audioConfiguration = makeAudioConfiguration(
+            microphoneDeviceID: microphoneDeviceID,
+            captureSystemViaSCK: captureSystemViaSCK,
+            captureMicrophone: captureMicrophone
+        )
+        let stream = SCStream(filter: audioFilter, configuration: audioConfiguration, delegate: self)
+        if captureSystemViaSCK {
+            try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: systemQueue)
+        }
+        if captureMicrophone {
+            try stream.addStreamOutput(self, type: .microphone, sampleHandlerQueue: micQueue)
+        }
+        try await stream.startCapture()
+        audioStream = stream
     }
 
     private func makeVideoFilter(
@@ -294,14 +382,15 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
 
     private func makeAudioConfiguration(
         microphoneDeviceID: String?,
-        captureSystemViaSCK: Bool
+        captureSystemViaSCK: Bool,
+        captureMicrophone: Bool
     ) -> SCStreamConfiguration {
         let configuration = SCStreamConfiguration()
         configuration.capturesAudio = captureSystemViaSCK
         configuration.excludesCurrentProcessAudio = true
-        configuration.captureMicrophone = true
-        // SCK has no echo-cancellation flag; speaker bleed is removed in AcousticEchoCanceller.
-        if let microphoneDeviceID, !microphoneDeviceID.isEmpty {
+        configuration.captureMicrophone = captureMicrophone
+        // Speaker bleed is removed by VoiceProcessing IO, or Speex when that unit is busy.
+        if captureMicrophone, let microphoneDeviceID, !microphoneDeviceID.isEmpty {
             configuration.microphoneCaptureDeviceID = microphoneDeviceID
         }
         configuration.sampleRate = 48_000
@@ -319,8 +408,8 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         configuration.capturesAudio = false
         configuration.captureMicrophone = false
         configuration.showsCursor = true
-        configuration.queueDepth = 5
-        configuration.pixelFormat = kCVPixelFormatType_32BGRA
+        configuration.queueDepth = 3
+        configuration.pixelFormat = MediaEncodePolicy.capturePixelFormat
         configuration.includeChildWindows = true
 
         let width: CGFloat
@@ -341,9 +430,12 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         // H.264 requires even dimensions — odd heights produce a stripe / corrupt frames.
         configuration.width = Self.evenPixelDimension(Int((width * scale).rounded()))
         configuration.height = Self.evenPixelDimension(Int((height * scale).rounded()))
-        configuration.minimumFrameInterval = CMTime(value: 1, timescale: 20)
-        // Prefer sharper text on Retina meeting UIs.
-        configuration.scalesToFit = false
+        configuration.minimumFrameInterval = CMTime(
+            value: 1,
+            timescale: CMTimeScale(max(1, MediaEncodePolicy.liveTargetFPS))
+        )
+        // GPU-scale in ScreenCaptureKit so VideoToolbox gets encoder-sized frames (no CI/CPU rescale).
+        configuration.scalesToFit = true
         return configuration
     }
 

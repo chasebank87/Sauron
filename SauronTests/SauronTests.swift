@@ -1,6 +1,10 @@
 import AppKit
+import AVFoundation
+import CoreAudio
 import CoreMedia
+import CoreVideo
 import Darwin
+import VideoToolbox
 import XCTest
 @testable import Sauron
 
@@ -1087,6 +1091,37 @@ final class AcousticEchoCancellerTests: XCTestCase {
         XCTAssertEqual(back[4], -1, accuracy: 0.002)
     }
 
+    func testMakeSampleBufferPreservesFloatPCM() {
+        guard let format = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: 48_000,
+            channels: 1,
+            interleaved: false
+        ) else {
+            return XCTFail("float format")
+        }
+        guard let pcm = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 480) else {
+            return XCTFail("pcm buffer")
+        }
+        pcm.frameLength = 480
+        guard let channel = pcm.floatChannelData?[0] else {
+            return XCTFail("channel")
+        }
+        for frame in 0..<480 {
+            channel[frame] = sin(Float(frame) / 8)
+        }
+        let pts = CMTime(value: 1_000_000_000, timescale: 1_000_000_000)
+        guard let sampleBuffer = AudioPCM.makeSampleBuffer(from: pcm, presentationTimeStamp: pts) else {
+            return XCTFail("wrap sample buffer")
+        }
+        guard let roundTrip = AudioPCM.buffer(from: sampleBuffer) else {
+            return XCTFail("unwrap sample buffer")
+        }
+        XCTAssertEqual(Int(roundTrip.frameLength), 480)
+        XCTAssertEqual(roundTrip.floatChannelData?[0][10] ?? 0, channel[10], accuracy: 0.0001)
+        XCTAssertEqual(CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds, 1, accuracy: 0.0001)
+    }
+
     func testReplacingMicBufferKeepsSineAndAudioBufferList() {
         let frames = 480
         var sine = [Float](repeating: 0, count: frames)
@@ -1301,5 +1336,36 @@ final class EchoCancellationSettingsTests: XCTestCase {
         XCTAssertTrue(settings.echoCancellationEnabled)
         settings.echoCancellationEnabled = false
         XCTAssertFalse(settings.echoCancellationEnabled)
+    }
+}
+
+final class AudioDeviceCatalogCoreAudioTests: XCTestCase {
+    func testUnknownUIDDoesNotResolve() {
+        XCTAssertNil(AudioDeviceCatalog.coreAudioDeviceID(matchingUID: ""))
+        XCTAssertNil(AudioDeviceCatalog.coreAudioDeviceID(matchingUID: "not-a-real-core-audio-uid"))
+    }
+}
+
+final class MediaEncodePolicyTests: XCTestCase {
+    func testHardwareHEVCEncoderIsRequested() {
+        let properties = MediaEncodePolicy.videoCompressionProperties(
+            codec: .hevc,
+            width: 1920,
+            height: 1080
+        )
+        XCTAssertEqual(properties[kVTCompressionPropertyKey_RealTime as String] as? Bool, true)
+        XCTAssertEqual(properties[kVTCompressionPropertyKey_AllowFrameReordering as String] as? Bool, false)
+        let spec = properties[kVTCompressionPropertyKey_EncoderSpecification as String] as? [String: Any]
+        XCTAssertEqual(
+            spec?[kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder as String] as? Bool,
+            true
+        )
+        XCTAssertEqual(MediaEncodePolicy.capturePixelFormat, kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)
+    }
+
+    func testResample48kTo16kKeepsThird() {
+        let input = (0..<480).map { Float($0) }
+        let down = AudioPCM.resample(input, from: 48_000, to: 16_000)
+        XCTAssertEqual(down.count, 160)
     }
 }
