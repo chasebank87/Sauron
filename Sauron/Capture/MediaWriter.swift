@@ -5,7 +5,8 @@ import CoreVideo
 import Foundation
 
 final class MediaWriter: @unchecked Sendable {
-    private let queue = DispatchQueue(label: "app.observer.writer")
+    /// Utility QoS so encode yields to UI / meeting audio under load.
+    private let queue = DispatchQueue(label: "app.sauron.writer", qos: .utility)
     private var videoWriter: AVAssetWriter?
     private var micWriter: AVAssetWriter?
     private var systemWriter: AVAssetWriter?
@@ -18,6 +19,9 @@ final class MediaWriter: @unchecked Sendable {
     private var startedVideo = false
     private var startedMic = false
     private var startedSystem = false
+    private var lastAcceptedVideoPTS = CMTime.invalid
+    /// When true, a video frame is already being processed — drop newcomers instead of queueing CPU work.
+    private var videoBusy = false
     private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
 
     let videoURL: URL?
@@ -44,40 +48,25 @@ final class MediaWriter: @unchecked Sendable {
     }
 
     func appendVideo(_ sampleBuffer: CMSampleBuffer) {
-        queue.sync {
-            prepareVideoInput(sampleBuffer)
-            guard let writer = videoWriter, let input = videoInput else { return }
-            beginSessionIfNeeded(writer: writer, sampleBuffer: sampleBuffer, started: &startedVideo)
-            guard writer.status == .writing, input.isReadyForMoreMediaData else { return }
-            guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-
-            let srcW = CVPixelBufferGetWidth(imageBuffer)
-            let srcH = CVPixelBufferGetHeight(imageBuffer)
-            let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-
-            // Prefer direct append when SCK already matched our even encoder size.
-            if srcW == videoWidth, srcH == videoHeight {
-                _ = input.append(sampleBuffer)
-                return
-            }
-
-            // Otherwise convert/crop through CI — raw memcpy was producing black frames
-            // when the ScreenCaptureKit buffer layout/format didn't match BGRA tightly.
-            appendConvertedFrame(imageBuffer, at: time)
+        // Retain the sample, then process async so SCK isn't blocked on encode.
+        queue.async { [weak self] in
+            self?.appendVideoOnQueue(sampleBuffer)
         }
     }
 
     func appendMic(_ sampleBuffer: CMSampleBuffer) {
-        queue.sync {
-            prepareAudioInput(sampleBuffer, writer: micWriter, input: &micInput, label: "mic")
-            append(sampleBuffer, writer: micWriter, input: micInput, started: &startedMic)
+        queue.async { [weak self] in
+            guard let self else { return }
+            self.prepareAudioInput(sampleBuffer, writer: self.micWriter, input: &self.micInput, label: "mic")
+            self.append(sampleBuffer, writer: self.micWriter, input: self.micInput, started: &self.startedMic)
         }
     }
 
     func appendSystem(_ sampleBuffer: CMSampleBuffer) {
-        queue.sync {
-            prepareAudioInput(sampleBuffer, writer: systemWriter, input: &systemInput, label: "system")
-            append(sampleBuffer, writer: systemWriter, input: systemInput, started: &startedSystem)
+        queue.async { [weak self] in
+            guard let self else { return }
+            self.prepareAudioInput(sampleBuffer, writer: self.systemWriter, input: &self.systemInput, label: "system")
+            self.append(sampleBuffer, writer: self.systemWriter, input: self.systemInput, started: &self.startedSystem)
         }
     }
 
@@ -85,6 +74,46 @@ final class MediaWriter: @unchecked Sendable {
         await finish(videoWriter, input: videoInput, started: startedVideo)
         await finish(micWriter, input: micInput, started: startedMic)
         await finish(systemWriter, input: systemInput, started: startedSystem)
+    }
+
+    private func appendVideoOnQueue(_ sampleBuffer: CMSampleBuffer) {
+        if MediaEncodePolicy.shouldDropAllLiveVideo { return }
+        if videoBusy { return }
+        videoBusy = true
+        defer { videoBusy = false }
+
+        prepareVideoInput(sampleBuffer)
+        guard let writer = videoWriter, let input = videoInput else { return }
+        beginSessionIfNeeded(writer: writer, sampleBuffer: sampleBuffer, started: &startedVideo)
+        guard writer.status == .writing, input.isReadyForMoreMediaData else { return }
+        guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+
+        let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+        if shouldDropForFrameRate(time) { return }
+
+        let srcW = CVPixelBufferGetWidth(imageBuffer)
+        let srcH = CVPixelBufferGetHeight(imageBuffer)
+
+        // Prefer direct append when SCK already matched our even encoder size.
+        if srcW == videoWidth, srcH == videoHeight {
+            if input.append(sampleBuffer) {
+                lastAcceptedVideoPTS = time
+            }
+            return
+        }
+
+        // Hot / Low Power: skip CI rescale (CPU+GPU) rather than bogging the machine down.
+        if MediaEncodePolicy.shouldAvoidCPUFrameConvert { return }
+
+        appendConvertedFrame(imageBuffer, at: time)
+        lastAcceptedVideoPTS = time
+    }
+
+    private func shouldDropForFrameRate(_ time: CMTime) -> Bool {
+        guard lastAcceptedVideoPTS.isValid, time.isValid else { return false }
+        let fps = max(1, MediaEncodePolicy.liveTargetFPS)
+        let minInterval = CMTime(value: 1, timescale: CMTimeScale(fps))
+        return CMTimeCompare(CMTimeSubtract(time, lastAcceptedVideoPTS), minInterval) < 0
     }
 
     private func prepareVideoInput(_ sampleBuffer: CMSampleBuffer) {
@@ -104,36 +133,56 @@ final class MediaWriter: @unchecked Sendable {
     }
 
     private func addVideoInput(to writer: AVAssetWriter, hint: CMFormatDescription?) {
-        let settings: [String: Any] = [
-            AVVideoCodecKey: AVVideoCodecType.h264,
-            AVVideoWidthKey: videoWidth,
-            AVVideoHeightKey: videoHeight,
-            AVVideoCompressionPropertiesKey: [
-                AVVideoAverageBitRateKey: max(6_000_000, videoWidth * videoHeight * 6),
-                AVVideoExpectedSourceFrameRateKey: 20,
-                AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
-                AVVideoMaxKeyFrameIntervalKey: 40
-            ]
-        ]
-        let input: AVAssetWriterInput
-        if let hint {
-            input = AVAssetWriterInput(mediaType: .video, outputSettings: settings, sourceFormatHint: hint)
+        let codecs: [AVVideoCodecType]
+        if MediaEncodePolicy.prefersHEVC {
+            codecs = [.hevc, .h264]
         } else {
-            input = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
+            codecs = [.h264]
         }
-        input.expectsMediaDataInRealTime = true
-        guard writer.canAdd(input) else { return }
-        writer.add(input)
-        videoInput = input
-        videoAdaptor = AVAssetWriterInputPixelBufferAdaptor(
-            assetWriterInput: input,
-            sourcePixelBufferAttributes: [
-                kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA),
-                kCVPixelBufferWidthKey as String: videoWidth,
-                kCVPixelBufferHeightKey as String: videoHeight,
-                kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any]
+
+        for codec in codecs {
+            let fps = MediaEncodePolicy.liveTargetFPS
+            let bitRate = MediaEncodePolicy.liveBitRate(width: videoWidth, height: videoHeight, codec: codec)
+            var compression: [String: Any] = [
+                AVVideoAverageBitRateKey: bitRate,
+                AVVideoExpectedSourceFrameRateKey: fps,
+                AVVideoMaxKeyFrameIntervalKey: max(2, fps * 2)
             ]
-        )
+            if codec == .h264 {
+                compression[AVVideoProfileLevelKey] = AVVideoProfileLevelH264HighAutoLevel
+            }
+
+            let settings: [String: Any] = [
+                AVVideoCodecKey: codec,
+                AVVideoWidthKey: videoWidth,
+                AVVideoHeightKey: videoHeight,
+                AVVideoCompressionPropertiesKey: compression
+            ]
+
+            guard writer.canApply(outputSettings: settings, forMediaType: .video) else { continue }
+
+            let input: AVAssetWriterInput
+            if let hint {
+                input = AVAssetWriterInput(mediaType: .video, outputSettings: settings, sourceFormatHint: hint)
+            } else {
+                input = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
+            }
+            input.expectsMediaDataInRealTime = true
+            guard writer.canAdd(input) else { continue }
+
+            writer.add(input)
+            videoInput = input
+            videoAdaptor = AVAssetWriterInputPixelBufferAdaptor(
+                assetWriterInput: input,
+                sourcePixelBufferAttributes: [
+                    kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA),
+                    kCVPixelBufferWidthKey as String: videoWidth,
+                    kCVPixelBufferHeightKey as String: videoHeight,
+                    kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any]
+                ]
+            )
+            return
+        }
     }
 
     private func appendConvertedFrame(_ source: CVPixelBuffer, at time: CMTime) {

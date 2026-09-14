@@ -17,6 +17,8 @@ final class AppState {
     var promptCapture: CaptureMedia
     var promptTranscript: Bool
     var promptMeetingAppAudio: Bool
+    var promptVideoTarget: CaptureVideoTarget = .auto
+    var captureTargetOptions: [CaptureTargetOption] = []
     var liveSegments: [LiveSegment] = []
     /// Segment that most recently changed — transcript panel scrolls to this for live interleave.
     var liveTranscriptFocusID: UUID?
@@ -229,6 +231,25 @@ final class AppState {
         promptCapture = settings.defaultCapture
         promptTranscript = settings.defaultTranscript
         promptMeetingAppAudio = settings.meetingAppAudioOnly
+        promptVideoTarget = .auto
+        captureTargetOptions = [
+            CaptureTargetOption(
+                id: CaptureVideoTarget.auto.id,
+                title: "Auto (recommended)",
+                subtitle: "Best meeting window at start",
+                systemImage: "sparkles.rectangle.stack",
+                target: .auto
+            )
+        ]
+        Task { await refreshCaptureTargetOptions() }
+    }
+
+    func refreshCaptureTargetOptions() async {
+        let options = await CaptureTargetCatalog.options(for: candidate)
+        captureTargetOptions = options
+        if !options.contains(where: { $0.target == promptVideoTarget }) {
+            promptVideoTarget = .auto
+        }
     }
 
     var promptModes: Set<RecordMode> {
@@ -507,6 +528,7 @@ final class AppState {
                 candidate: candidate,
                 modes: modes,
                 audioSource: promptAudioSource,
+                videoTarget: promptVideoTarget,
                 microphoneDeviceID: priority.first?.captureDeviceID,
                 folder: MediaStore.folder(for: meeting.id)
             )

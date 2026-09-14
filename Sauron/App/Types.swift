@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 enum AppStatus: Equatable, Sendable {
@@ -110,6 +111,30 @@ enum CaptureAudioSource: String, CaseIterable, Identifiable, Codable, Sendable {
     }
 }
 
+/// Where video comes from when recording starts.
+enum CaptureVideoTarget: Hashable, Sendable, Identifiable {
+    /// Re-pick the best meeting window at start (today’s behavior).
+    case auto
+    case window(UInt32)
+    case display(CGDirectDisplayID)
+
+    var id: String {
+        switch self {
+        case .auto: "auto"
+        case .window(let id): "window:\(id)"
+        case .display(let id): "display:\(id)"
+        }
+    }
+}
+
+struct CaptureTargetOption: Identifiable, Hashable, Sendable {
+    var id: String
+    var title: String
+    var subtitle: String
+    var systemImage: String
+    var target: CaptureVideoTarget
+}
+
 enum AudioSignalSource: String, CaseIterable, Identifiable, Sendable {
     case microphone
     case system
@@ -139,6 +164,15 @@ enum AudioSignalSource: String, CaseIterable, Identifiable, Sendable {
         case .system: "Nothing heard from system audio"
         case .meetingApp: "Nothing heard from the meeting app"
         }
+    }
+
+    static func remoteSilentMessage(kind: MeetingKind?, source: CaptureAudioSource) -> String {
+        if kind?.needsCoreAudioSystemTap == true {
+            return "Waiting for FaceTime call audio… Grant System Audio permission if prompted."
+        }
+        return source == .meetingApp
+            ? AudioSignalSource.meetingApp.silentMessage
+            : AudioSignalSource.system.silentMessage
     }
 }
 
@@ -302,6 +336,12 @@ enum MeetingKind: String, Codable, Sendable, Equatable {
         case .simulated: "sparkles"
         case .unknown: "calendar.badge.clock"
         }
+    }
+
+    /// FaceTime / Continuity call audio is produced by system daemons (`avconferenced`),
+    /// which ScreenCaptureKit cannot hear. Use a Core Audio process tap instead.
+    var needsCoreAudioSystemTap: Bool {
+        self == .faceTime
     }
 }
 

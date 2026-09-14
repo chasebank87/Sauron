@@ -203,7 +203,7 @@ final class GlassPanelController {
 }
 
 enum GlassChrome {
-    static let promptSize = CGSize(width: 480, height: 540)
+    static let promptSize = CGSize(width: 480, height: 620)
     static let transcriptSize = CGSize(width: 400, height: 620)
     static let assistSize = CGSize(width: 340, height: 520)
     static let errorSize = CGSize(width: 380, height: 160)

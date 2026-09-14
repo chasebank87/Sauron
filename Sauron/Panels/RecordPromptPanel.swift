@@ -63,23 +63,43 @@ struct RecordPromptView: View {
             .frame(height: 176)
             .padding(.top, 20)
 
+            if appState.promptCapture == .videoAndAudio {
+                CaptureTargetPickerRow(
+                    selection: $appState.promptVideoTarget,
+                    options: appState.captureTargetOptions
+                ) {
+                    Task { await appState.refreshCaptureTargetOptions() }
+                }
+                .padding(.top, 16)
+            }
+
             TranscriptSettingRow(isOn: $appState.promptTranscript)
                 .onChange(of: appState.promptTranscript) { _, _ in
                     appState.persistPromptDefaults()
                 }
                 .padding(.top, 20)
 
-            PromptSettingRow(
-                title: "Meeting app only",
-                detail: appState.promptMeetingAppAudio
-                    ? "Only audio from this meeting app"
-                    : "All Mac audio (default)",
-                isOn: $appState.promptMeetingAppAudio
-            )
-            .onChange(of: appState.promptMeetingAppAudio) { _, _ in
-                appState.persistPromptDefaults()
+            if appState.candidate?.kind.needsCoreAudioSystemTap == true {
+                PromptSettingRow(
+                    title: "Meeting app only",
+                    detail: "FaceTime needs all Mac audio (call audio isn’t in the FaceTime app process)",
+                    isOn: .constant(false)
+                )
+                .disabled(true)
+                .padding(.top, 10)
+            } else {
+                PromptSettingRow(
+                    title: "Meeting app only",
+                    detail: appState.promptMeetingAppAudio
+                        ? "Only audio from this meeting app"
+                        : "All Mac audio (default)",
+                    isOn: $appState.promptMeetingAppAudio
+                )
+                .onChange(of: appState.promptMeetingAppAudio) { _, _ in
+                    appState.persistPromptDefaults()
+                }
+                .padding(.top, 10)
             }
-            .padding(.top, 10)
 
             Divider()
                 .overlay(SauronTheme.hairline(for: colorScheme))
@@ -175,6 +195,80 @@ private struct TranscriptSettingRow: View {
     }
 }
 
+private struct CaptureTargetPickerRow: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @Binding var selection: CaptureVideoTarget
+    let options: [CaptureTargetOption]
+    let onRefresh: () -> Void
+
+    private var selectedOption: CaptureTargetOption? {
+        options.first(where: { $0.target == selection }) ?? options.first
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Capture")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.primary)
+                Text(selectedOption?.subtitle ?? "Choose a window or screen")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            Spacer(minLength: 8)
+            Menu {
+                Button("Refresh list", action: onRefresh)
+                Divider()
+                ForEach(options) { option in
+                    Button {
+                        selection = option.target
+                    } label: {
+                        Label {
+                            VStack(alignment: .leading) {
+                                Text(option.title)
+                                Text(option.subtitle)
+                                    .font(.caption)
+                            }
+                        } icon: {
+                            Image(systemName: option.systemImage)
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: selectedOption?.systemImage ?? "macwindow")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text(selectedOption?.title ?? "Auto")
+                        .font(.system(size: 12, weight: .semibold))
+                        .lineLimit(1)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .foregroundStyle(SauronTheme.accent)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background {
+                    Capsule(style: .continuous)
+                        .fill(SauronTheme.accent.opacity(0.12))
+                }
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .background {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(SauronTheme.fillSubtle(for: colorScheme))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Capture target")
+        .accessibilityValue(selectedOption?.title ?? "Auto")
+    }
+}
+
 private struct PromptSettingRow: View {
     @Environment(\.colorScheme) private var colorScheme
     let title: String
@@ -258,9 +352,10 @@ struct TranscriptPanelView: View {
                         }
                         if appState.audioMonitor.remoteSilent {
                             SilenceWarningBanner(
-                                message: appState.audioMonitor.remoteSource == .meetingApp
-                                    ? AudioSignalSource.meetingApp.silentMessage
-                                    : AudioSignalSource.system.silentMessage
+                                message: AudioSignalSource.remoteSilentMessage(
+                                    kind: appState.currentMeeting?.kind ?? appState.candidate?.kind,
+                                    source: appState.audioMonitor.remoteSource
+                                )
                             ) {
                                 appState.audioMonitor.dismissRemoteWarning()
                             }

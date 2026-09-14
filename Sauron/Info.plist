@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Observer</string>
+	<string>Sauron</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -37,7 +37,7 @@
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Sauron uses your calendar to show what’s up next and to match live meetings to scheduled events. Choose which calendars to subscribe to in Settings. Calendar access is optional.</string>
 	<key>NSAudioCaptureUsageDescription</key>
-	<string>Sauron captures meeting audio from apps like Zoom or Meet so it can transcribe other participants locally.</string>
+	<string>Sauron captures meeting audio (including FaceTime call audio) so it can transcribe other participants locally on this Mac.</string>
 	<key>NSScreenCaptureUsageDescription</key>
 	<string>Sauron captures the meeting window and system audio. Nothing is uploaded; recordings stay on this Mac.</string>
 </dict>

@@ -8,6 +8,50 @@ enum MediaCompose {
         systemURL: URL?,
         outputURL: URL
     ) async throws -> URL? {
+        try await Task.detached(priority: MediaEncodePolicy.exportTaskPriority) {
+            try await mixAudioLocked(micURL: micURL, systemURL: systemURL, outputURL: outputURL)
+        }.value
+    }
+
+    /// Mux window video with mixed audio into one playable MP4.
+    /// Prefer passthrough remux, then hardware HEVC, then H.264 size ladders.
+    static func muxVideo(
+        videoURL: URL?,
+        audioURL: URL?,
+        outputURL: URL
+    ) async throws -> URL? {
+        if MediaEncodePolicy.shouldSkipVideoMux {
+            return usableMediaURL(videoURL)
+        }
+        return try await Task.detached(priority: MediaEncodePolicy.exportTaskPriority) {
+            try await muxVideoLocked(videoURL: videoURL, audioURL: audioURL, outputURL: outputURL)
+        }.value
+    }
+
+    static func mixedAudioURL(in folder: URL) -> URL {
+        folder.appending(path: "mixed.m4a")
+    }
+
+    static func composedVideoURL(in folder: URL) -> URL {
+        folder.appending(path: "recording.mp4")
+    }
+
+    /// Back-compat names.
+    static func mix(micURL: URL?, systemURL: URL?, outputURL: URL) async throws -> URL? {
+        try await mixAudio(micURL: micURL, systemURL: systemURL, outputURL: outputURL)
+    }
+
+    static func mixedURL(in folder: URL) -> URL {
+        mixedAudioURL(in: folder)
+    }
+
+    // MARK: - Internals
+
+    private static func mixAudioLocked(
+        micURL: URL?,
+        systemURL: URL?,
+        outputURL: URL
+    ) async throws -> URL? {
         let mic = usableMediaURL(micURL)
         let system = usableMediaURL(systemURL)
         guard mic != nil || system != nil else { return nil }
@@ -83,9 +127,7 @@ enum MediaCompose {
         return outputURL
     }
 
-    /// Mux window video with mixed audio into one playable MP4.
-    /// Prefer remux-style presets so we don't re-encode (and potentially blacken) the video.
-    static func muxVideo(
+    private static func muxVideoLocked(
         videoURL: URL?,
         audioURL: URL?,
         outputURL: URL
@@ -143,48 +185,31 @@ enum MediaCompose {
             )
         }
 
-        // Avoid HighestQuality re-encode when possible — it can produce black frames
-        // from some ScreenCaptureKit H.264 bitstreams. Prefer 1920x1080 / 1280x720.
-        let preferredPresets = [
-            AVAssetExportPreset1920x1080,
-            AVAssetExportPreset1280x720,
-            AVAssetExportPresetHighestQuality
-        ]
         let available = Set(AVAssetExportSession.allExportPresets())
-        let preset = preferredPresets.first(where: { available.contains($0) })
-            ?? AVAssetExportPresetPassthrough
-        guard let export = AVAssetExportSession(asset: composition, presetName: preset) else {
-            throw SauronError.captureFailed("Could not create video mux export session.")
+        let candidates = MediaEncodePolicy.muxPresetPreference.filter { available.contains($0) }
+        let presets = candidates.isEmpty ? [AVAssetExportPresetPassthrough] : candidates
+
+        for preset in presets {
+            try? FileManager.default.removeItem(at: outputURL)
+            guard let export = AVAssetExportSession(asset: composition, presetName: preset) else {
+                continue
+            }
+            do {
+                try await export.export(to: outputURL, as: .mp4)
+            } catch {
+                continue
+            }
+            let outputSize = (try? outputURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+            let outputBPS = Double(outputSize) / max(videoDuration.seconds, 1)
+            if FileManager.default.fileExists(atPath: outputURL.path),
+               outputSize > 0,
+               outputBPS > 12_000 {
+                return outputURL
+            }
         }
 
-        try await export.export(to: outputURL, as: .mp4)
-        let outputSize = (try? outputURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
-        let outputBPS = Double(outputSize) / max(videoDuration.seconds, 1)
-        guard FileManager.default.fileExists(atPath: outputURL.path),
-              outputSize > 0,
-              outputBPS > 12_000
-        else {
-            // Fall back to the raw capture rather than shipping a black mux.
-            return video
-        }
-        return outputURL
-    }
-
-    static func mixedAudioURL(in folder: URL) -> URL {
-        folder.appending(path: "mixed.m4a")
-    }
-
-    static func composedVideoURL(in folder: URL) -> URL {
-        folder.appending(path: "recording.mp4")
-    }
-
-    /// Back-compat names.
-    static func mix(micURL: URL?, systemURL: URL?, outputURL: URL) async throws -> URL? {
-        try await mixAudio(micURL: micURL, systemURL: systemURL, outputURL: outputURL)
-    }
-
-    static func mixedURL(in folder: URL) -> URL {
-        mixedAudioURL(in: folder)
+        // Fall back to the raw capture rather than shipping a black mux.
+        return video
     }
 
     private static func usableMediaURL(_ url: URL?) -> URL? {

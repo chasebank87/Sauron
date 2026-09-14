@@ -14,15 +14,17 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
     /// Fired when mic mute state changes mid-capture.
     var onMicMuteChanged: ((Bool) -> Void)?
 
-    private let videoQueue = DispatchQueue(label: "app.sauron.capture.video")
+    private let videoQueue = DispatchQueue(label: "app.sauron.capture.video", qos: .userInitiated)
     /// Mic has its own queue so remote/system audio + diarization never block “You” capture.
     private let micQueue = DispatchQueue(label: "app.sauron.capture.mic", qos: .userInitiated)
     private let systemQueue = DispatchQueue(label: "app.sauron.capture.system", qos: .utility)
     private var videoStream: SCStream?
     private var audioStream: SCStream?
+    private var systemTap: SystemAudioTap?
     private var writer: MediaWriter?
     private var includeVideo = false
     private var includeAudio = false
+    private var usesCoreAudioSystemTap = false
     private var audioSource: CaptureAudioSource = .system
     private var microphoneDeviceID: String?
     private var isStopping = false
@@ -37,12 +39,15 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         candidate: MeetingCandidate,
         modes: Set<RecordMode>,
         audioSource: CaptureAudioSource,
+        videoTarget: CaptureVideoTarget = .auto,
         microphoneDeviceID: String?,
         folder: URL
     ) async throws {
         includeVideo = modes.contains(.visual)
         includeAudio = modes.contains(.audio) || modes.contains(.transcript)
-        self.audioSource = audioSource
+        // FaceTime remote audio isn't visible to ScreenCaptureKit — always use a process tap.
+        usesCoreAudioSystemTap = includeAudio && candidate.kind.needsCoreAudioSystemTap
+        self.audioSource = usesCoreAudioSystemTap ? .system : audioSource
         self.microphoneDeviceID = microphoneDeviceID
         isStopping = false
         writer = MediaWriter(folder: folder, includeVideo: includeVideo, includeAudio: includeAudio)
@@ -54,16 +59,49 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
             throw SauronError.screenRecordingDenied
         }
 
-        let videoFilter = try makeVideoFilter(candidate: candidate, content: content)
-        let audioFilter = try makeAudioFilter(candidate: candidate, content: content, source: audioSource)
+        let videoFilter = try makeVideoFilter(candidate: candidate, content: content, target: videoTarget)
+        let audioFilter = try makeAudioFilter(
+            candidate: candidate,
+            content: content,
+            source: self.audioSource
+        )
 
         if includeAudio {
-            let audioConfiguration = makeAudioConfiguration(microphoneDeviceID: microphoneDeviceID)
+            let audioConfiguration = makeAudioConfiguration(
+                microphoneDeviceID: microphoneDeviceID,
+                captureSystemViaSCK: !usesCoreAudioSystemTap
+            )
             let stream = SCStream(filter: audioFilter, configuration: audioConfiguration, delegate: self)
-            try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: systemQueue)
+            if !usesCoreAudioSystemTap {
+                try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: systemQueue)
+            }
             try stream.addStreamOutput(self, type: .microphone, sampleHandlerQueue: micQueue)
             try await stream.startCapture()
             audioStream = stream
+
+            if usesCoreAudioSystemTap {
+                let tap = SystemAudioTap()
+                tap.onBuffer = { [weak self] sampleBuffer in
+                    guard let self, self.includeAudio else { return }
+                    self.writer?.appendSystem(sampleBuffer)
+                    self.onSystemAudio?(sampleBuffer)
+                }
+                do {
+                    try tap.start()
+                    systemTap = tap
+                } catch {
+                    // Fall back to SCK system audio rather than failing the whole recording.
+                    usesCoreAudioSystemTap = false
+                    try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: systemQueue)
+                    try await stream.updateConfiguration(
+                        makeAudioConfiguration(
+                            microphoneDeviceID: microphoneDeviceID,
+                            captureSystemViaSCK: true
+                        )
+                    )
+                    onFailure?(error)
+                }
+            }
         }
 
         if includeVideo {
@@ -79,7 +117,10 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
     func switchMicrophone(to deviceID: String?) async throws {
         guard includeAudio, let audioStream else { return }
         microphoneDeviceID = deviceID
-        let configuration = makeAudioConfiguration(microphoneDeviceID: deviceID)
+        let configuration = makeAudioConfiguration(
+            microphoneDeviceID: deviceID,
+            captureSystemViaSCK: !usesCoreAudioSystemTap
+        )
         try await audioStream.updateConfiguration(configuration)
     }
 
@@ -97,8 +138,11 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         isStopping = true
         let video = videoStream
         let audio = audioStream
+        let tap = systemTap
         videoStream = nil
         audioStream = nil
+        systemTap = nil
+        tap?.stop()
         if let video {
             try? await video.stopCapture()
         }
@@ -116,7 +160,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
             guard includeVideo, isCompleteFrame(sampleBuffer) else { return }
             writer?.appendVideo(sampleBuffer)
         case .audio:
-            guard includeAudio else { return }
+            guard includeAudio, !usesCoreAudioSystemTap else { return }
             writer?.appendSystem(sampleBuffer)
             onSystemAudio?(sampleBuffer)
         case .microphone:
@@ -141,7 +185,30 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         onCaptureInterrupted?(error)
     }
 
-    private func makeVideoFilter(candidate: MeetingCandidate, content: SCShareableContent) throws -> SCContentFilter {
+    private func makeVideoFilter(
+        candidate: MeetingCandidate,
+        content: SCShareableContent,
+        target: CaptureVideoTarget
+    ) throws -> SCContentFilter {
+        switch target {
+        case .window(let windowID):
+            if let window = content.windows.first(where: { $0.windowID == windowID }) {
+                return SCContentFilter(desktopIndependentWindow: window)
+            }
+            // Window closed — fall through to auto.
+            break
+        case .display(let displayID):
+            if let display = content.displays.first(where: { $0.displayID == displayID }) {
+                return SCContentFilter(display: display, excludingWindows: [])
+            }
+            if let display = preferredDisplay(in: content) {
+                return SCContentFilter(display: display, excludingWindows: [])
+            }
+            throw SauronError.noDisplay
+        case .auto:
+            break
+        }
+
         // Re-pick the best live meeting window (Teams Calendar shells must not win).
         let liveMatches = content.windows.compactMap { window -> MeetingCandidate? in
             guard window.isOnScreen else { return nil }
@@ -195,7 +262,8 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         case .system:
             return SCContentFilter(display: display, excludingWindows: [])
         case .meetingApp:
-            if candidate.isSimulated {
+            // FaceTime audio lives in system daemons — never filter to FaceTime.app only.
+            if candidate.kind.needsCoreAudioSystemTap || candidate.isSimulated {
                 return SCContentFilter(display: display, excludingWindows: [])
             }
             if let app = meetingApplication(candidate: candidate, content: content) {
@@ -213,9 +281,12 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         content.displays.first(where: { $0.displayID == CGMainDisplayID() }) ?? content.displays.first
     }
 
-    private func makeAudioConfiguration(microphoneDeviceID: String?) -> SCStreamConfiguration {
+    private func makeAudioConfiguration(
+        microphoneDeviceID: String?,
+        captureSystemViaSCK: Bool
+    ) -> SCStreamConfiguration {
         let configuration = SCStreamConfiguration()
-        configuration.capturesAudio = true
+        configuration.capturesAudio = captureSystemViaSCK
         configuration.excludesCurrentProcessAudio = true
         configuration.captureMicrophone = true
         if let microphoneDeviceID, !microphoneDeviceID.isEmpty {
