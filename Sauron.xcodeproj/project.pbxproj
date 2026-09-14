@@ -10,6 +10,7 @@
 		002D509ABF6E4A4EC6A5CEC1 /* WindowShareAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = F127B78E5E5AB1D04954FBE7 /* WindowShareAccess.swift */; };
 		0222E625B7DC1E1FE26474D2 /* DashboardHomeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C0B1EE8A9A54A430009E86 /* DashboardHomeTab.swift */; };
 		028E0F868611E2ABEE38B706 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A88653CB16E58B08B97254 /* Models.swift */; };
+		0348A13CBAAF09976707221F /* kiss_fftr.c in Sources */ = {isa = PBXBuildFile; fileRef = E958A296025F44A35C630EE1 /* kiss_fftr.c */; };
 		0662F8AD7507B1A31878B4A8 /* Types.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358C4E339FFCA3376302B905 /* Types.swift */; };
 		095753BC13A0C8EDADA26E93 /* DashboardPeopleTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EFAB08E9757A877A8B0D3D8 /* DashboardPeopleTab.swift */; };
 		0D788E2C8E025A6EF560FF73 /* MeetingUserNotesEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C6840B3B6B1A3CD5C12FFBD /* MeetingUserNotesEditor.swift */; };
@@ -18,6 +19,7 @@
 		1C84A7E8CB849EB7FB5DCFEC /* PresenceHeuristicsScorer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BA10B6753304EB58A44131C /* PresenceHeuristicsScorer.swift */; };
 		1CFB9E7E7C62E1069EFE9C9B /* DashboardLibraryTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFA0680AB2FEDF1F2AC1762D /* DashboardLibraryTab.swift */; };
 		21B0179880B7C52825D1E6FA /* MediaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8571CDE2A345DFBA4D63B9 /* MediaStore.swift */; };
+		220BD3287A1BA25F7A008B3C /* kiss_fft.c in Sources */ = {isa = PBXBuildFile; fileRef = 1CEED9A5350AE423CF087D4E /* kiss_fft.c */; };
 		2328BEF8DFF38C86AE90AB8A /* LMStudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFC258887C774ECC15376E24 /* LMStudio.swift */; };
 		233C6C7ADB41CE31419415B6 /* MCPProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E4BC7E5DDEA8EAA89CBF27 /* MCPProtocol.swift */; };
 		28C78BEF9E4DADD0CD0D4052 /* Speech.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2E0F4F2BEC7D8273CD847AC4 /* Speech.framework */; };
@@ -30,7 +32,9 @@
 		3788ECB5E027DE5CE1C195CB /* DashboardChatStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB007E425FF4315F412548B0 /* DashboardChatStore.swift */; };
 		37FF9A2A504FCE82E6FD1C49 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A874D0741542DDEAC7C74A4 /* SettingsView.swift */; };
 		3A4301ED89861A943183E4CC /* PermissionProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 438361C15BD9375806AB8324 /* PermissionProbe.swift */; };
+		3B0327E6F4AC0E17F85660BF /* LocalScreenShareSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D1A94AEF88A2728C1FF1B6 /* LocalScreenShareSignal.swift */; };
 		3DBD990DCB65ECD9279DECE6 /* LiveAssistPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0F7A361849C15BF7EE35F9 /* LiveAssistPanel.swift */; };
+		3FD75DE27E20F7C77A4388F3 /* mdf.c in Sources */ = {isa = PBXBuildFile; fileRef = 826937D9FBB472590D1FC80A /* mdf.c */; };
 		41A46147CFD03B03B9B5D524 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3023EB74C109DDDE89835020 /* AppState.swift */; };
 		478DD42FA1848670C7FE4E0F /* CalendarSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4778FAA96D8BF761FEECABB9 /* CalendarSignal.swift */; };
 		48B52484E977C0C718D19E76 /* AudioPCM.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C3ADC0C48A8E1E4D77165E /* AudioPCM.swift */; };
@@ -45,6 +49,7 @@
 		55D27F05526685B7D319C352 /* MeetingWindowPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 864C79DFACFEE1C17BD49859 /* MeetingWindowPicker.swift */; };
 		58011291A9A02C7FFAA8B44F /* WindowOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCB1032AF945A9AD1D2DAB8 /* WindowOpener.swift */; };
 		5BD901FD3163A1AA7284CAAA /* LLMClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D186E7FE68A4450A5E3F31C /* LLMClient.swift */; };
+		5C4C7559F92CBE224DD781ED /* SauronAECBridge.c in Sources */ = {isa = PBXBuildFile; fileRef = FEC032F7400C902ABAE92619 /* SauronAECBridge.c */; };
 		5FC2CEDAB8BA30675FFEE5A4 /* ScreenCaptureAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EBC3BD160FC5C75BDB95D49 /* ScreenCaptureAccess.swift */; };
 		60BC145F8539FE48885A2C26 /* GlobalHotkeyMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707BC17E5CE3C97484E02177 /* GlobalHotkeyMonitor.swift */; };
 		676BCA749D601A0026FA6411 /* AudioSignalMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3B6D748A84893DF9D327B5D /* AudioSignalMonitor.swift */; };
@@ -54,7 +59,9 @@
 		6B640DCFF5987C7C281D2D83 /* DashboardInsightsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B4009E38308F7C363D41E6 /* DashboardInsightsTab.swift */; };
 		6BE03660B467703C1E75EC4D /* AudioDeviceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 164692D51C8A94E32656A0D1 /* AudioDeviceCatalog.swift */; };
 		719B8D4A7F225661D78DCBAD /* DashboardAskTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB695135BBB11FDCDA351763 /* DashboardAskTab.swift */; };
+		72E0F88B8A5DC329664BE0AE /* preprocess.c in Sources */ = {isa = PBXBuildFile; fileRef = C7C9215EC723398E433A4FD5 /* preprocess.c */; };
 		74FF7540E7272C0A81EF7558 /* PromptAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE0C6B42B569F67E5CDD033 /* PromptAlert.swift */; };
+		757BC76D003AE8E66A4D854C /* AcousticEchoCanceller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95EB9C979AF7F4A1E8B32D97 /* AcousticEchoCanceller.swift */; };
 		75E9E770FB410534CE5EAC05 /* MeetingMemoryQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB39325F05D96ED33C8A82D /* MeetingMemoryQuery.swift */; };
 		77B862579BF821B2AA6CD307 /* TranscriptPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDF5D0FBBF75FA465CD9F45 /* TranscriptPanel.swift */; };
 		79AE9AD58429C2674124C6F8 /* HermesMCPInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6AA3978C3E8A54D1B20B99 /* HermesMCPInstaller.swift */; };
@@ -70,6 +77,7 @@
 		9CFCF19D86BF1CDA860DC809 /* SpeakerDiarizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BDD38A02DCD4D041036A917 /* SpeakerDiarizer.swift */; };
 		9D83194945381FE9D5E45551 /* MeetingDocumentsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB0812581ED258DA87687B8A /* MeetingDocumentsSection.swift */; };
 		9DEFB6C5796126A906E33269 /* PermissionsOnboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = E783C190734A044F4D11D5DE /* PermissionsOnboarding.swift */; };
+		B0BB0F6399E5A6533B186A25 /* fftwrap.c in Sources */ = {isa = PBXBuildFile; fileRef = 5F3CF9842294B7C3C5CBA8D9 /* fftwrap.c */; };
 		B204E2EE1444E772AA1A1923 /* MeetingDiarizing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B0E6982AFBB133DBE973628 /* MeetingDiarizing.swift */; };
 		B43E8B7335DBAFC5F2D6068A /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 1926D9934CF11D35C75662E9 /* FluidAudio */; };
 		B43F95A164C7BCB455115C43 /* Ollama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37DC158E71F8C6F1BA222EDF /* Ollama.swift */; };
@@ -87,6 +95,7 @@
 		CB2091EAA0037AD68D1364BC /* TrackedItemStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ED3188298AB89CC0207CE1 /* TrackedItemStore.swift */; };
 		CC2B57ED42DCF83E84FC1B74 /* TranscriptionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8512556CB5E8B8E5F1EE200A /* TranscriptionEngine.swift */; };
 		CD98F6566875DBFA6F622FF8 /* RecordingAmbientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1518A936C6324820200B1A3 /* RecordingAmbientBackground.swift */; };
+		CF6A0C34731B90B8F5AF2E8B /* filterbank.c in Sources */ = {isa = PBXBuildFile; fileRef = 4CEEDE972114F05004BC48D7 /* filterbank.c */; };
 		D3A4AF242B3DD46E4FEF7AD8 /* GlassPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66179ED191094D5C0A18697C /* GlassPanel.swift */; };
 		D5141986501AA79B0368BAD6 /* MeetingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7373580292D5939611ACCB4D /* MeetingStore.swift */; };
 		D6232CEFB169B0C8246E9FCE /* MediaEncodePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC6A6F43FEE35F05011090C /* MediaEncodePolicy.swift */; };
@@ -99,15 +108,6 @@
 		F811916A1F2CCE0B89E7B2EE /* FluidAudioModelStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BAB738C3D6CD3024684BFAF /* FluidAudioModelStore.swift */; };
 		FA9A261795F6D11F075517C1 /* LiquidGlassScrollChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC4E0974B86E14839A439EB3 /* LiquidGlassScrollChrome.swift */; };
 		FEA14FC697B5A2304E36521D /* DashboardAsksTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = C643F0962D4EB961673F5542 /* DashboardAsksTab.swift */; };
-
-		C0AECAEC00000000000001 /* AcousticEchoCanceller.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000021 /* AcousticEchoCanceller.swift */; };
-		C0AECAEC00000000000002 /* SauronAECBridge.c in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000022 /* SauronAECBridge.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -w"; }; };
-		C0AECAEC00000000000003 /* mdf.c in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000023 /* mdf.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -w"; }; };
-		C0AECAEC00000000000004 /* preprocess.c in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000024 /* preprocess.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -w"; }; };
-		C0AECAEC00000000000005 /* fftwrap.c in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000025 /* fftwrap.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -w"; }; };
-		C0AECAEC00000000000006 /* filterbank.c in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000026 /* filterbank.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -w"; }; };
-		C0AECAEC00000000000007 /* kiss_fft.c in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000027 /* kiss_fft.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -w"; }; };
-		C0AECAEC00000000000008 /* kiss_fftr.c in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000028 /* kiss_fftr.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -w"; }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -132,6 +132,7 @@
 		19907B784E624A4A3F8284C6 /* MediaWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaWriter.swift; sourceTree = "<group>"; };
 		19CFA7BC3BCE0F4BE73472CE /* TavilyClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TavilyClient.swift; sourceTree = "<group>"; };
 		1AF46443357CE1489E9B285B /* ScreenCaptureKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ScreenCaptureKit.framework; path = System/Library/Frameworks/ScreenCaptureKit.framework; sourceTree = SDKROOT; };
+		1CEED9A5350AE423CF087D4E /* kiss_fft.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = kiss_fft.c; sourceTree = "<group>"; };
 		1D10DE491742A2780F698126 /* CaptureTargetCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureTargetCatalog.swift; sourceTree = "<group>"; };
 		2D186E7FE68A4450A5E3F31C /* LLMClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMClient.swift; sourceTree = "<group>"; };
 		2E0F4F2BEC7D8273CD847AC4 /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
@@ -149,6 +150,7 @@
 		4778FAA96D8BF761FEECABB9 /* CalendarSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarSignal.swift; sourceTree = "<group>"; };
 		49093D84545E5B795DF11DEB /* OpenRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenRouter.swift; sourceTree = "<group>"; };
 		4BAB738C3D6CD3024684BFAF /* FluidAudioModelStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluidAudioModelStore.swift; sourceTree = "<group>"; };
+		4CEEDE972114F05004BC48D7 /* filterbank.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = filterbank.c; sourceTree = "<group>"; };
 		51B4BC53805606E0E673C85E /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		52A27E1668E53470A282F524 /* ConfettiCannonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiCannonView.swift; sourceTree = "<group>"; };
 		5CC6A6F43FEE35F05011090C /* MediaEncodePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaEncodePolicy.swift; sourceTree = "<group>"; };
@@ -156,8 +158,11 @@
 		5D5EFE6879936B26EA5368CE /* ReactiveWaveformLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReactiveWaveformLine.swift; sourceTree = "<group>"; };
 		5E401A517DF9B9004B319314 /* Charts.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Charts.framework; path = System/Library/Frameworks/Charts.framework; sourceTree = SDKROOT; };
 		5EC39D00FCF6A891E7903A5D /* TrackedItemReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackedItemReconciler.swift; sourceTree = "<group>"; };
+		5EC493448E5B07C69B2CA64A /* Sauron-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Sauron-Bridging-Header.h"; sourceTree = "<group>"; };
 		5EFAB08E9757A877A8B0D3D8 /* DashboardPeopleTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardPeopleTab.swift; sourceTree = "<group>"; };
+		5F3CF9842294B7C3C5CBA8D9 /* fftwrap.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = fftwrap.c; sourceTree = "<group>"; };
 		64BAE9890D9BBC67205BEDEA /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		64D1A94AEF88A2728C1FF1B6 /* LocalScreenShareSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalScreenShareSignal.swift; sourceTree = "<group>"; };
 		66179ED191094D5C0A18697C /* GlassPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassPanel.swift; sourceTree = "<group>"; };
 		67D5EE800716500240670C8E /* MeetingMemoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingMemoryStore.swift; sourceTree = "<group>"; };
 		6B0316E30DB3E471E39118F5 /* MemoryMCPHandlers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryMCPHandlers.swift; sourceTree = "<group>"; };
@@ -169,11 +174,13 @@
 		7C416F65690F1F4BF23A317B /* MeetingDocumentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDocumentStore.swift; sourceTree = "<group>"; };
 		7D00DFE50D662587D4A57ADB /* MemoryMCPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryMCPServer.swift; sourceTree = "<group>"; };
 		7D0F7A361849C15BF7EE35F9 /* LiveAssistPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveAssistPanel.swift; sourceTree = "<group>"; };
+		826937D9FBB472590D1FC80A /* mdf.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = mdf.c; sourceTree = "<group>"; };
 		8512556CB5E8B8E5F1EE200A /* TranscriptionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionEngine.swift; sourceTree = "<group>"; };
 		864C79DFACFEE1C17BD49859 /* MeetingWindowPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingWindowPicker.swift; sourceTree = "<group>"; };
 		8D468CFCF3B07323F6601D6F /* SpeakerProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerProfileStore.swift; sourceTree = "<group>"; };
 		8DD940E5C35DE38E8E07402C /* Sauron.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sauron.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8DDF5D0FBBF75FA465CD9F45 /* TranscriptPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptPanel.swift; sourceTree = "<group>"; };
+		95EB9C979AF7F4A1E8B32D97 /* AcousticEchoCanceller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcousticEchoCanceller.swift; sourceTree = "<group>"; };
 		962751BE7191AD7CD04B984C /* BrandMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandMark.swift; sourceTree = "<group>"; };
 		962B70CA7B5DBA924EE46858 /* DashboardMemoryTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardMemoryTab.swift; sourceTree = "<group>"; };
 		9BA10B6753304EB58A44131C /* PresenceHeuristicsScorer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceHeuristicsScorer.swift; sourceTree = "<group>"; };
@@ -194,6 +201,7 @@
 		BEE057EE0B032D085403F3D8 /* MeetingChunker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingChunker.swift; sourceTree = "<group>"; };
 		C643F0962D4EB961673F5542 /* DashboardAsksTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardAsksTab.swift; sourceTree = "<group>"; };
 		C7769DE6ECE22495B70D803B /* SauronApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SauronApp.swift; sourceTree = "<group>"; };
+		C7C9215EC723398E433A4FD5 /* preprocess.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = preprocess.c; sourceTree = "<group>"; };
 		CBAF7F3710D642513A02FE47 /* RecordPromptPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordPromptPanel.swift; sourceTree = "<group>"; };
 		CC7D1E9E085C1F78FED6DE88 /* PDFKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PDFKit.framework; path = System/Library/Frameworks/PDFKit.framework; sourceTree = SDKROOT; };
 		CCC17F03C2466F5C4B8D60BD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -206,6 +214,7 @@
 		DBCFF4BCD9B174875C77DEE4 /* CaptureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureEngine.swift; sourceTree = "<group>"; };
 		E1514F9076DF6EB2FDC42B00 /* SauronTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SauronTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E783C190734A044F4D11D5DE /* PermissionsOnboarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsOnboarding.swift; sourceTree = "<group>"; };
+		E958A296025F44A35C630EE1 /* kiss_fftr.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = kiss_fftr.c; sourceTree = "<group>"; };
 		EB0812581ED258DA87687B8A /* MeetingDocumentsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDocumentsSection.swift; sourceTree = "<group>"; };
 		EB6AA3978C3E8A54D1B20B99 /* HermesMCPInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HermesMCPInstaller.swift; sourceTree = "<group>"; };
 		EFA0680AB2FEDF1F2AC1762D /* DashboardLibraryTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardLibraryTab.swift; sourceTree = "<group>"; };
@@ -214,6 +223,7 @@
 		F7ED3188298AB89CC0207CE1 /* TrackedItemStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackedItemStore.swift; sourceTree = "<group>"; };
 		FA276104BB054D2335E4126A /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		FE6E3E4849B9553E0F944A56 /* MeetingAppCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingAppCatalog.swift; sourceTree = "<group>"; };
+		FEC032F7400C902ABAE92619 /* SauronAECBridge.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = SauronAECBridge.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -330,10 +340,20 @@
 			path = MenuBar;
 			sourceTree = "<group>";
 		};
+		4BB7684808B5AE9CE34C3633 /* AEC */ = {
+			isa = PBXGroup;
+			children = (
+				C6201B5169C4E3FC29FCEB81 /* speex */,
+				95EB9C979AF7F4A1E8B32D97 /* AcousticEchoCanceller.swift */,
+				FEC032F7400C902ABAE92619 /* SauronAECBridge.c */,
+			);
+			path = AEC;
+			sourceTree = "<group>";
+		};
 		7220DEBEB4A5A7130999FC36 /* Capture */ = {
 			isa = PBXGroup;
 			children = (
-				C0AECAEC00000000000040 /* AEC */,
+				4BB7684808B5AE9CE34C3633 /* AEC */,
 				164692D51C8A94E32656A0D1 /* AudioDeviceCatalog.swift */,
 				6F53ADB8512545A02C501A26 /* AudioInputDeviceWatcher.swift */,
 				F4C3ADC0C48A8E1E4D77165E /* AudioPCM.swift */,
@@ -397,11 +417,25 @@
 			path = Persistence;
 			sourceTree = "<group>";
 		};
+		AD5DF57CDC361E29F5B21C43 /* lib */ = {
+			isa = PBXGroup;
+			children = (
+				5F3CF9842294B7C3C5CBA8D9 /* fftwrap.c */,
+				4CEEDE972114F05004BC48D7 /* filterbank.c */,
+				1CEED9A5350AE423CF087D4E /* kiss_fft.c */,
+				E958A296025F44A35C630EE1 /* kiss_fftr.c */,
+				826937D9FBB472590D1FC80A /* mdf.c */,
+				C7C9215EC723398E433A4FD5 /* preprocess.c */,
+			);
+			path = lib;
+			sourceTree = "<group>";
+		};
 		B2892BAEC66F36D3792512F8 /* Detection */ = {
 			isa = PBXGroup;
 			children = (
 				4778FAA96D8BF761FEECABB9 /* CalendarSignal.swift */,
 				1D10DE491742A2780F698126 /* CaptureTargetCatalog.swift */,
+				64D1A94AEF88A2728C1FF1B6 /* LocalScreenShareSignal.swift */,
 				FE6E3E4849B9553E0F944A56 /* MeetingAppCatalog.swift */,
 				9CF08E5AB181694924393655 /* MeetingDetector.swift */,
 				864C79DFACFEE1C17BD49859 /* MeetingWindowPicker.swift */,
@@ -424,6 +458,14 @@
 				5EC39D00FCF6A891E7903A5D /* TrackedItemReconciler.swift */,
 			);
 			path = Intelligence;
+			sourceTree = "<group>";
+		};
+		C6201B5169C4E3FC29FCEB81 /* speex */ = {
+			isa = PBXGroup;
+			children = (
+				AD5DF57CDC361E29F5B21C43 /* lib */,
+			);
+			path = speex;
 			sourceTree = "<group>";
 		};
 		CA8BBBE652F1AB844F1F5A0E /* Panels */ = {
@@ -466,7 +508,7 @@
 				89DA843BD3631F4E2659D36E /* Settings */,
 				1E3164DFDCADAA02F329CD6A /* Transcription */,
 				CCC17F03C2466F5C4B8D60BD /* Assets.xcassets */,
-				C0AECAEC00000000000029 /* Sauron-Bridging-Header.h */,
+				5EC493448E5B07C69B2CA64A /* Sauron-Bridging-Header.h */,
 				C7769DE6ECE22495B70D803B /* SauronApp.swift */,
 			);
 			path = Sauron;
@@ -478,38 +520,6 @@
 				DAB2F533C9E9835FCE420DA7 /* SauronTests.swift */,
 			);
 			path = SauronTests;
-			sourceTree = "<group>";
-		};
-
-		C0AECAEC00000000000040 /* AEC */ = {
-			isa = PBXGroup;
-			children = (
-				C0AECAEC00000000000021 /* AcousticEchoCanceller.swift */,
-				C0AECAEC00000000000022 /* SauronAECBridge.c */,
-				C0AECAEC00000000000041 /* speex */,
-			);
-			path = AEC;
-			sourceTree = "<group>";
-		};
-		C0AECAEC00000000000041 /* speex */ = {
-			isa = PBXGroup;
-			children = (
-				C0AECAEC00000000000042 /* lib */,
-			);
-			path = speex;
-			sourceTree = "<group>";
-		};
-		C0AECAEC00000000000042 /* lib */ = {
-			isa = PBXGroup;
-			children = (
-				C0AECAEC00000000000025 /* fftwrap.c */,
-				C0AECAEC00000000000026 /* filterbank.c */,
-				C0AECAEC00000000000027 /* kiss_fft.c */,
-				C0AECAEC00000000000028 /* kiss_fftr.c */,
-				C0AECAEC00000000000023 /* mdf.c */,
-				C0AECAEC00000000000024 /* preprocess.c */,
-			);
-			path = lib;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -615,13 +625,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				757BC76D003AE8E66A4D854C /* AcousticEchoCanceller.swift in Sources */,
 				E2395AF9EF8487C495CBB377 /* AgentProviders.swift in Sources */,
 				41A46147CFD03B03B9B5D524 /* AppState.swift in Sources */,
 				6BE03660B467703C1E75EC4D /* AudioDeviceCatalog.swift in Sources */,
 				67B2FF22BDF9D6B50A333893 /* AudioInputDeviceWatcher.swift in Sources */,
 				48B52484E977C0C718D19E76 /* AudioPCM.swift in Sources */,
 				676BCA749D601A0026FA6411 /* AudioSignalMonitor.swift in Sources */,
-				C0AECAEC00000000000001 /* AcousticEchoCanceller.swift in Sources */,
 				3243435383D4B412E85AC535 /* BrandMark.swift in Sources */,
 				478DD42FA1848670C7FE4E0F /* CalendarSignal.swift in Sources */,
 				8D576191CDD25804184A6787 /* CaptureEngine.swift in Sources */,
@@ -648,6 +658,7 @@
 				FA9A261795F6D11F075517C1 /* LiquidGlassScrollChrome.swift in Sources */,
 				3DBD990DCB65ECD9279DECE6 /* LiveAssistPanel.swift in Sources */,
 				938F45286595FD935129C07F /* LiveAssistantEngine.swift in Sources */,
+				3B0327E6F4AC0E17F85660BF /* LocalScreenShareSignal.swift in Sources */,
 				233C6C7ADB41CE31419415B6 /* MCPProtocol.swift in Sources */,
 				9302BEFF04C3BAB3B32B7287 /* MediaCompose.swift in Sources */,
 				D6232CEFB169B0C8246E9FCE /* MediaEncodePolicy.swift in Sources */,
@@ -681,13 +692,7 @@
 				B8ED2A43E45E2E57C25CE40A /* RecordPromptPanel.swift in Sources */,
 				CD98F6566875DBFA6F622FF8 /* RecordingAmbientBackground.swift in Sources */,
 				BF2581954DE70D184D135BAD /* ReportWindow.swift in Sources */,
-				C0AECAEC00000000000002 /* SauronAECBridge.c in Sources */,
-				C0AECAEC00000000000003 /* mdf.c in Sources */,
-				C0AECAEC00000000000004 /* preprocess.c in Sources */,
-				C0AECAEC00000000000005 /* fftwrap.c in Sources */,
-				C0AECAEC00000000000006 /* filterbank.c in Sources */,
-				C0AECAEC00000000000007 /* kiss_fft.c in Sources */,
-				C0AECAEC00000000000008 /* kiss_fftr.c in Sources */,
+				5C4C7559F92CBE224DD781ED /* SauronAECBridge.c in Sources */,
 				4DDD7DB4D9DEB8DF80A2344C /* SauronApp.swift in Sources */,
 				5FC2CEDAB8BA30675FFEE5A4 /* ScreenCaptureAccess.swift in Sources */,
 				C7D2BFA242EBA6DA302CB1E2 /* SettingsStore.swift in Sources */,
@@ -705,6 +710,12 @@
 				0662F8AD7507B1A31878B4A8 /* Types.swift in Sources */,
 				58011291A9A02C7FFAA8B44F /* WindowOpener.swift in Sources */,
 				002D509ABF6E4A4EC6A5CEC1 /* WindowShareAccess.swift in Sources */,
+				B0BB0F6399E5A6533B186A25 /* fftwrap.c in Sources */,
+				CF6A0C34731B90B8F5AF2E8B /* filterbank.c in Sources */,
+				220BD3287A1BA25F7A008B3C /* kiss_fft.c in Sources */,
+				0348A13CBAAF09976707221F /* kiss_fftr.c in Sources */,
+				3FD75DE27E20F7C77A4388F3 /* mdf.c in Sources */,
+				72E0F88B8A5DC329664BE0AE /* preprocess.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -728,12 +739,17 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = MZSC4FTLNA;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Sauron/Capture/AEC",
+					"$(SRCROOT)/Sauron/Capture/AEC/speex/include",
+					"$(SRCROOT)/Sauron/Capture/AEC/speex/lib",
+				);
 				INFOPLIST_FILE = Sauron/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Sauron;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -743,18 +759,13 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.5;
+				MARKETING_VERSION = 0.1.6;
+				OTHER_CFLAGS = "$(inherited) -DHAVE_CONFIG_H -Wno-everything";
 				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.Sauron;
 				PRODUCT_NAME = Sauron;
 				SDKROOT = macosx;
-				SWIFT_OBJC_BRIDGING_HEADER = "Sauron/Sauron-Bridging-Header.h";
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/Sauron/Capture/AEC",
-					"$(SRCROOT)/Sauron/Capture/AEC/speex/include",
-					"$(SRCROOT)/Sauron/Capture/AEC/speex/lib",
-				);
-				OTHER_CFLAGS = "$(inherited) -DHAVE_CONFIG_H -Wno-everything";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Sauron/Sauron-Bridging-Header.h";
 				SWIFT_STRICT_CONCURRENCY = targeted;
 			};
 			name = Debug;
@@ -768,12 +779,17 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_TEAM = MZSC4FTLNA;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Sauron/Capture/AEC",
+					"$(SRCROOT)/Sauron/Capture/AEC/speex/include",
+					"$(SRCROOT)/Sauron/Capture/AEC/speex/lib",
+				);
 				INFOPLIST_FILE = Sauron/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Sauron;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -783,18 +799,13 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.5;
+				MARKETING_VERSION = 0.1.6;
+				OTHER_CFLAGS = "$(inherited) -DHAVE_CONFIG_H -Wno-everything";
 				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.Sauron;
 				PRODUCT_NAME = Sauron;
 				SDKROOT = macosx;
-				SWIFT_OBJC_BRIDGING_HEADER = "Sauron/Sauron-Bridging-Header.h";
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/Sauron/Capture/AEC",
-					"$(SRCROOT)/Sauron/Capture/AEC/speex/include",
-					"$(SRCROOT)/Sauron/Capture/AEC/speex/lib",
-				);
-				OTHER_CFLAGS = "$(inherited) -DHAVE_CONFIG_H -Wno-everything";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Sauron/Sauron-Bridging-Header.h";
 				SWIFT_STRICT_CONCURRENCY = targeted;
 			};
 			name = Release;

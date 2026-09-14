@@ -152,7 +152,7 @@ enum LocalScreenShareSignal {
         ) else {
             return false
         }
-        return MeetingAppCatalog.webMatch(normalizedTitle) != nil
+        return MeetingAppCatalog.webMatch(title: normalizedTitle) != nil
     }
 
     static func isMeetingNative(bundleIdentifier: String?, appName: String?) -> Bool {
