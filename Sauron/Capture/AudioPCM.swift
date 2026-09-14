@@ -1,4 +1,5 @@
 import Accelerate
+import AudioToolbox
 import AVFoundation
 import CoreMedia
 import Foundation
@@ -180,7 +181,82 @@ enum AudioPCM {
         let frames = Int(pcm.frameLength)
         guard frames > 0, mono.count == frames else { return nil }
         write(mono: mono, into: pcm)
-        return makeSampleBuffer(from: pcm, matching: sampleBuffer)
+        return makeSampleBuffer(
+            from: pcm,
+            presentationTimeStamp: CMSampleBufferGetPresentationTimeStamp(sampleBuffer),
+            decodeTimeStamp: CMSampleBufferGetDecodeTimeStamp(sampleBuffer)
+        )
+    }
+
+    static func makeSampleBuffer(from pcm: AVAudioPCMBuffer, capturedAt time: AVAudioTime) -> CMSampleBuffer? {
+        let nanos: UInt64
+        if time.isHostTimeValid {
+            nanos = AudioConvertHostTimeToNanos(time.hostTime)
+        } else {
+            nanos = AudioConvertHostTimeToNanos(AudioGetCurrentHostTime())
+        }
+        return makeSampleBuffer(
+            from: pcm,
+            presentationTimeStamp: CMTime(value: Int64(nanos), timescale: 1_000_000_000)
+        )
+    }
+
+    static func makeSampleBuffer(
+        from pcm: AVAudioPCMBuffer,
+        presentationTimeStamp: CMTime,
+        decodeTimeStamp: CMTime = .invalid
+    ) -> CMSampleBuffer? {
+        let frames = Int(pcm.frameLength)
+        guard frames > 0, pcm.format.sampleRate > 0 else { return nil }
+        var asbd = pcm.format.streamDescription.pointee
+        var formatDescription: CMAudioFormatDescription?
+        let formatStatus = CMAudioFormatDescriptionCreate(
+            allocator: kCFAllocatorDefault,
+            asbd: &asbd,
+            layoutSize: 0,
+            layout: nil,
+            magicCookieSize: 0,
+            magicCookie: nil,
+            extensions: nil,
+            formatDescriptionOut: &formatDescription
+        )
+        guard formatStatus == noErr, let formatDescription else { return nil }
+
+        let duration = CMTime(
+            value: CMTimeValue(frames),
+            timescale: CMTimeScale(max(1, Int32(pcm.format.sampleRate.rounded())))
+        )
+        var timing = CMSampleTimingInfo(
+            duration: duration,
+            presentationTimeStamp: presentationTimeStamp.isValid ? presentationTimeStamp : .zero,
+            decodeTimeStamp: decodeTimeStamp
+        )
+        var sampleBuffer: CMSampleBuffer?
+        let createStatus = CMSampleBufferCreate(
+            allocator: kCFAllocatorDefault,
+            dataBuffer: nil,
+            dataReady: false,
+            makeDataReadyCallback: nil,
+            refcon: nil,
+            formatDescription: formatDescription,
+            sampleCount: CMItemCount(frames),
+            sampleTimingEntryCount: 1,
+            sampleTimingArray: &timing,
+            sampleSizeEntryCount: 0,
+            sampleSizeArray: nil,
+            sampleBufferOut: &sampleBuffer
+        )
+        guard createStatus == noErr, let sampleBuffer else { return nil }
+
+        let listStatus = CMSampleBufferSetDataBufferFromAudioBufferList(
+            sampleBuffer,
+            kCFAllocatorDefault,
+            kCFAllocatorDefault,
+            0,
+            pcm.audioBufferList
+        )
+        guard listStatus == noErr else { return nil }
+        return sampleBuffer
     }
 
     private static func write(mono: [Float], into pcm: AVAudioPCMBuffer) {
@@ -202,66 +278,5 @@ enum AudioPCM {
                 }
             }
         }
-    }
-
-    private static func makeSampleBuffer(from pcm: AVAudioPCMBuffer, matching original: CMSampleBuffer) -> CMSampleBuffer? {
-        guard let formatDescription = CMSampleBufferGetFormatDescription(original) else { return nil }
-        let abl = UnsafeMutableAudioBufferListPointer(pcm.mutableAudioBufferList)
-        var byteCount = 0
-        for buffer in abl {
-            byteCount += Int(buffer.mDataByteSize)
-        }
-        guard byteCount > 0 else { return nil }
-
-        var blockBuffer: CMBlockBuffer?
-        let blockStatus = CMBlockBufferCreateWithMemoryBlock(
-            allocator: kCFAllocatorDefault,
-            memoryBlock: nil,
-            blockLength: byteCount,
-            blockAllocator: kCFAllocatorDefault,
-            customBlockSource: nil,
-            offsetToData: 0,
-            dataLength: byteCount,
-            flags: 0,
-            blockBufferOut: &blockBuffer
-        )
-        guard blockStatus == kCMBlockBufferNoErr, let blockBuffer else { return nil }
-
-        var offset = 0
-        for buffer in abl {
-            guard let data = buffer.mData else { continue }
-            let length = Int(buffer.mDataByteSize)
-            let copyStatus = CMBlockBufferReplaceDataBytes(
-                with: data,
-                blockBuffer: blockBuffer,
-                offsetIntoDestination: offset,
-                dataLength: length
-            )
-            guard copyStatus == kCMBlockBufferNoErr else { return nil }
-            offset += length
-        }
-
-        var timing = CMSampleTimingInfo(
-            duration: CMSampleBufferGetDuration(original),
-            presentationTimeStamp: CMSampleBufferGetPresentationTimeStamp(original),
-            decodeTimeStamp: CMSampleBufferGetDecodeTimeStamp(original)
-        )
-        var sampleBuffer: CMSampleBuffer?
-        let createStatus = CMSampleBufferCreate(
-            allocator: kCFAllocatorDefault,
-            dataBuffer: blockBuffer,
-            dataReady: true,
-            makeDataReadyCallback: nil,
-            refcon: nil,
-            formatDescription: formatDescription,
-            sampleCount: CMItemCount(pcm.frameLength),
-            sampleTimingEntryCount: 1,
-            sampleTimingArray: &timing,
-            sampleSizeEntryCount: 0,
-            sampleSizeArray: nil,
-            sampleBufferOut: &sampleBuffer
-        )
-        guard createStatus == noErr else { return nil }
-        return sampleBuffer
     }
 }

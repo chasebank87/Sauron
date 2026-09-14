@@ -3,12 +3,12 @@ import CoreMedia
 import Darwin
 import Foundation
 
-/// SpeexDSP MDF acoustic echo canceller.
+/// SpeexDSP MDF acoustic echo canceller (software fallback).
 ///
-/// ScreenCaptureKit has no echo-cancellation flag, and VoiceProcessing IO
-/// steals the system output mix (which silences SCK system-audio capture).
-/// This uses the already-captured system/meeting-app audio as the far-end
-/// reference and subtracts speaker-to-mic bleed from the local mic lane.
+/// Preferred path is Apple VoiceProcessing IO (`VoiceProcessingMicCapture`),
+/// which runs AEC outside Sauron. This engine is used when that unit cannot
+/// start. It subtracts already-captured system/meeting-app audio (far-end)
+/// from the ScreenCaptureKit microphone (near-end).
 final class AcousticEchoCanceller: @unchecked Sendable {
     static let processSampleRate = 16_000
     static let frameSize = 160

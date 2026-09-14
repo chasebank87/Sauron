@@ -127,7 +127,7 @@ struct GeneralSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Toggle("Reject speaker echo", isOn: $settings.echoCancellationEnabled)
-                Text("Stops meeting audio playing from this Mac’s speakers from being recorded on your microphone. Leave on unless you hear artifacts with headphones.")
+                Text("Uses Apple’s echo canceller so meeting audio playing from this Mac’s speakers is not recorded on your microphone. Falls back to software cancellation if Apple’s unit is busy. Leave on unless you hear artifacts with headphones.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

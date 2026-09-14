@@ -39,6 +39,7 @@
 		478DD42FA1848670C7FE4E0F /* CalendarSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4778FAA96D8BF761FEECABB9 /* CalendarSignal.swift */; };
 		48B52484E977C0C718D19E76 /* AudioPCM.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C3ADC0C48A8E1E4D77165E /* AudioPCM.swift */; };
 		4D2705DDF4B163C894C68AB0 /* SystemAudioTap.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEDE6242233BA138A4C0D50E /* SystemAudioTap.swift */; };
+		4E8C1A209A1B4C5D6E7F8091 /* VoiceProcessingMicCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8C1A209B1C4D5E6F708192A /* VoiceProcessingMicCapture.swift */; };
 		4DDD7DB4D9DEB8DF80A2344C /* SauronApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7769DE6ECE22495B70D803B /* SauronApp.swift */; };
 		4EB290509FE3EB0FC43756BB /* MeetingChunker.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEE057EE0B032D085403F3D8 /* MeetingChunker.swift */; };
 		4EFCB1058864E87C0F01133C /* DashboardComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D8069D231FFD188C2B244BC /* DashboardComponents.swift */; };
@@ -198,6 +199,7 @@
 		BC4E0974B86E14839A439EB3 /* LiquidGlassScrollChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlassScrollChrome.swift; sourceTree = "<group>"; };
 		BDCB1032AF945A9AD1D2DAB8 /* WindowOpener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowOpener.swift; sourceTree = "<group>"; };
 		BEDE6242233BA138A4C0D50E /* SystemAudioTap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAudioTap.swift; sourceTree = "<group>"; };
+		E8C1A209B1C4D5E6F708192A /* VoiceProcessingMicCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceProcessingMicCapture.swift; sourceTree = "<group>"; };
 		BEE057EE0B032D085403F3D8 /* MeetingChunker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingChunker.swift; sourceTree = "<group>"; };
 		C643F0962D4EB961673F5542 /* DashboardAsksTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardAsksTab.swift; sourceTree = "<group>"; };
 		C7769DE6ECE22495B70D803B /* SauronApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SauronApp.swift; sourceTree = "<group>"; };
@@ -364,6 +366,7 @@
 				19907B784E624A4A3F8284C6 /* MediaWriter.swift */,
 				3EBC3BD160FC5C75BDB95D49 /* ScreenCaptureAccess.swift */,
 				BEDE6242233BA138A4C0D50E /* SystemAudioTap.swift */,
+				E8C1A209B1C4D5E6F708192A /* VoiceProcessingMicCapture.swift */,
 				F127B78E5E5AB1D04954FBE7 /* WindowShareAccess.swift */,
 			);
 			path = Capture;
@@ -708,6 +711,7 @@
 				77B862579BF821B2AA6CD307 /* TranscriptPanel.swift in Sources */,
 				CC2B57ED42DCF83E84FC1B74 /* TranscriptionEngine.swift in Sources */,
 				0662F8AD7507B1A31878B4A8 /* Types.swift in Sources */,
+				4E8C1A209A1B4C5D6E7F8091 /* VoiceProcessingMicCapture.swift in Sources */,
 				58011291A9A02C7FFAA8B44F /* WindowOpener.swift in Sources */,
 				002D509ABF6E4A4EC6A5CEC1 /* WindowShareAccess.swift in Sources */,
 				B0BB0F6399E5A6533B186A25 /* fftwrap.c in Sources */,

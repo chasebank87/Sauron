@@ -1,4 +1,7 @@
 import AppKit
+import AVFoundation
+import CoreAudio
+import CoreMedia
 import CoreVideo
 import Darwin
 import VideoToolbox
@@ -1088,6 +1091,37 @@ final class AcousticEchoCancellerTests: XCTestCase {
         XCTAssertEqual(back[4], -1, accuracy: 0.002)
     }
 
+    func testMakeSampleBufferPreservesFloatPCM() {
+        guard let format = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: 48_000,
+            channels: 1,
+            interleaved: false
+        ) else {
+            return XCTFail("float format")
+        }
+        guard let pcm = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 480) else {
+            return XCTFail("pcm buffer")
+        }
+        pcm.frameLength = 480
+        guard let channel = pcm.floatChannelData?[0] else {
+            return XCTFail("channel")
+        }
+        for frame in 0..<480 {
+            channel[frame] = sin(Float(frame) / 8)
+        }
+        let pts = CMTime(value: 1_000_000_000, timescale: 1_000_000_000)
+        guard let sampleBuffer = AudioPCM.makeSampleBuffer(from: pcm, presentationTimeStamp: pts) else {
+            return XCTFail("wrap sample buffer")
+        }
+        guard let roundTrip = AudioPCM.buffer(from: sampleBuffer) else {
+            return XCTFail("unwrap sample buffer")
+        }
+        XCTAssertEqual(Int(roundTrip.frameLength), 480)
+        XCTAssertEqual(roundTrip.floatChannelData?[0][10] ?? 0, channel[10], accuracy: 0.0001)
+        XCTAssertEqual(CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds, 1, accuracy: 0.0001)
+    }
+
     func testEchoOnlyCancelsDelayedFarEnd() {
         let aec = AcousticEchoCanceller()
         let rate = AcousticEchoCanceller.processSampleRate
@@ -1183,6 +1217,13 @@ final class EchoCancellationSettingsTests: XCTestCase {
         XCTAssertTrue(settings.echoCancellationEnabled)
         settings.echoCancellationEnabled = false
         XCTAssertFalse(settings.echoCancellationEnabled)
+    }
+}
+
+final class AudioDeviceCatalogCoreAudioTests: XCTestCase {
+    func testUnknownUIDDoesNotResolve() {
+        XCTAssertNil(AudioDeviceCatalog.coreAudioDeviceID(matchingUID: ""))
+        XCTAssertNil(AudioDeviceCatalog.coreAudioDeviceID(matchingUID: "not-a-real-core-audio-uid"))
     }
 }
 
