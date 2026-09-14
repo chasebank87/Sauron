@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-/// SpeexDSP MDF echo canceller + residual-echo preprocessor, 16-bit frames.
+/// SpeexDSP MDF echo canceller, 16-bit frames.
 typedef struct SauronAECEngine SauronAECEngine;
 
 SauronAECEngine *SauronAECEngineCreate(int sample_rate, int frame_size, int tail_size);

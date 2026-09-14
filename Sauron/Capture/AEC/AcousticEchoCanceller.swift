@@ -5,10 +5,12 @@ import Foundation
 
 /// SpeexDSP MDF acoustic echo canceller.
 ///
+/// Goal: if meeting audio is playing from laptop/desktop speakers, the mic
+/// track should be the local talker only — not that speaker bleed. Far-end
+/// reference is the already-captured system / meeting-app audio.
+///
 /// ScreenCaptureKit has no echo-cancellation flag, and VoiceProcessing IO
 /// steals the system output mix (which silences SCK system-audio capture).
-/// This uses the already-captured system/meeting-app audio as the far-end
-/// reference and subtracts speaker-to-mic bleed from the local mic lane.
 final class AcousticEchoCanceller: @unchecked Sendable {
     static let processSampleRate = 16_000
     static let frameSize = 160

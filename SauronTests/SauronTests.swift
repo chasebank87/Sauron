@@ -1,4 +1,5 @@
 import AppKit
+import CoreMedia
 import Darwin
 import XCTest
 @testable import Sauron
@@ -1084,6 +1085,59 @@ final class AcousticEchoCancellerTests: XCTestCase {
         XCTAssertEqual(back[0], 0, accuracy: 0.002)
         XCTAssertEqual(back[1], 0.5, accuracy: 0.002)
         XCTAssertEqual(back[4], -1, accuracy: 0.002)
+    }
+
+    func testReplacingMicBufferKeepsSineAndAudioBufferList() {
+        let frames = 480
+        var sine = [Float](repeating: 0, count: frames)
+        for index in 0..<frames {
+            sine[index] = 0.5 * sin(2 * Float.pi * Float(index) / 40)
+        }
+        guard let original = AudioPCM.sampleBuffer(
+            mono: sine,
+            sampleRate: 48_000,
+            presentationTimeStamp: CMTime(value: 1_000, timescale: 48_000)
+        ) else {
+            XCTFail("could not wrap original mic buffer")
+            return
+        }
+
+        var listSize = 0
+        let sizeStatus = CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(
+            original,
+            bufferListSizeNeededOut: &listSize,
+            bufferListOut: nil,
+            bufferListSize: 0,
+            blockBufferAllocator: kCFAllocatorDefault,
+            blockBufferMemoryAllocator: kCFAllocatorDefault,
+            flags: 0,
+            blockBufferOut: nil
+        )
+        XCTAssertTrue(
+            sizeStatus == noErr || sizeStatus == kCMSampleBufferError_ArrayTooSmall,
+            "AEC output must expose an AudioBufferList for AAC, got \(sizeStatus)"
+        )
+        XCTAssertGreaterThan(listSize, 0)
+
+        let quieter = sine.map { $0 * 0.5 }
+        guard let replaced = AudioPCM.replacing(sampleBuffer: original, withMono: quieter),
+              let pcm = AudioPCM.buffer(from: replaced)
+        else {
+            XCTFail("could not round-trip replaced mic buffer")
+            return
+        }
+        let mix = AudioPCM.mixdown(pcm)
+        XCTAssertEqual(mix.count, frames)
+        XCTAssertEqual(mix[10], quieter[10], accuracy: 0.02)
+        XCTAssertEqual(
+            CMSampleBufferGetNumSamples(replaced),
+            CMItemCount(frames)
+        )
+        XCTAssertEqual(
+            CMSampleBufferGetPresentationTimeStamp(replaced).seconds,
+            CMSampleBufferGetPresentationTimeStamp(original).seconds,
+            accuracy: 0.0001
+        )
     }
 
     func testEchoOnlyCancelsDelayedFarEnd() {
