@@ -846,6 +846,35 @@ final class ParakeetRetranscriberTests: XCTestCase {
     }
 }
 
+final class MenuBarPresentationTests: XCTestCase {
+    func testWatchingChipReplacesRedundantSubtitle() {
+        XCTAssertEqual(MenuBarPresentation.chipTitle(for: .detecting), "Watching")
+        XCTAssertNotEqual(MenuBarPresentation.chipTitle(for: .detecting), "Watching for meetings")
+        XCTAssertEqual(MenuBarPresentation.chipTitle(for: .idle), "Idle")
+        XCTAssertEqual(MenuBarPresentation.chipTitle(for: .prompt), "Meeting detected")
+        XCTAssertEqual(MenuBarPresentation.chipTitle(for: .recording), "Recording")
+        XCTAssertEqual(MenuBarPresentation.chipTitle(for: .processing), "Writing report")
+    }
+
+    func testLiveDotTracksActiveStates() {
+        XCTAssertFalse(MenuBarPresentation.chipIsLive(.idle))
+        XCTAssertTrue(MenuBarPresentation.chipIsLive(.detecting))
+        XCTAssertTrue(MenuBarPresentation.chipIsLive(.prompt))
+        XCTAssertTrue(MenuBarPresentation.chipIsLive(.recording))
+        XCTAssertTrue(MenuBarPresentation.chipIsLive(.processing))
+    }
+
+    func testRecentIconsUsePeopleForRealMeetingsAndSparklesForGenerated() {
+        let real: [MeetingKind] = [.zoom, .teams, .meet, .faceTime, .webex, .slack, .unknown]
+        for kind in real {
+            XCTAssertEqual(MenuBarPresentation.recentSystemImage(for: kind), "person.2.fill")
+            XCTAssertFalse(MenuBarPresentation.recentIsGenerated(kind))
+        }
+        XCTAssertEqual(MenuBarPresentation.recentSystemImage(for: .simulated), "sparkles")
+        XCTAssertTrue(MenuBarPresentation.recentIsGenerated(.simulated))
+    }
+}
+
 final class LivePaneSharePolicyTests: XCTestCase {
     @MainActor
     func testHideLivePanesWhileSharingDefaultsOn() {
