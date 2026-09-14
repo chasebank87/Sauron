@@ -56,6 +56,7 @@ final class AppState {
     @ObservationIgnored private var detectorWatch: Task<Void, Never>?
     @ObservationIgnored private var hotkeyMonitor: GlobalHotkeyMonitor?
     @ObservationIgnored private var micPriorityIndex = 0
+    @ObservationIgnored private var livePanesHiddenForScreenShare = false
     private(set) var activeMicDisplayName = "System Default"
 
     var modelContext: ModelContext { modelContainer.mainContext }
@@ -411,10 +412,14 @@ final class AppState {
         var lastKey: String?
         while !Task.isCancelled {
             try? await Task.sleep(for: .milliseconds(400))
-            if status == .recording, detector.recordedMeetingEnded {
-                detector.clearRecordingWatch()
-                await finishRecording()
-                lastKey = nil
+            if status == .recording {
+                if detector.recordedMeetingEnded {
+                    detector.clearRecordingWatch()
+                    await finishRecording()
+                    lastKey = nil
+                    continue
+                }
+                syncLivePanesForScreenShare()
                 continue
             }
             guard status == .idle || status == .detecting || status == .prompt else { continue }
@@ -453,30 +458,71 @@ final class AppState {
     }
 
     private func showTranscript() {
+        let hide = LivePaneSharePolicy.shouldHidePanes(
+            settingEnabled: settings.hideLivePanesWhileSharing,
+            isUserScreenSharing: detector.isUserScreenSharing,
+            isRecording: status == .recording
+        )
         // Ambient mesh lives behind content; skip NSGlassEffectView so color stays vivid.
         transcriptPanel.present(
             TranscriptPanelView()
                 .environment(self),
             size: GlassChrome.transcriptSize,
             placement: .trailing,
-            usesPaneChrome: true
+            usesPaneChrome: true,
+            ordersFront: !hide
         )
-        showAssistIfNeeded()
+        showAssistIfNeeded(ordersFront: !hide)
+        livePanesHiddenForScreenShare = hide
     }
 
-    private func showAssistIfNeeded() {
+    private func showAssistIfNeeded(ordersFront: Bool = true) {
         assistPanel.present(
             LiveAssistPanelView()
                 .environment(self),
             size: GlassChrome.assistSize,
             placement: .leading,
-            usesPaneChrome: true
+            usesPaneChrome: true,
+            ordersFront: ordersFront
         )
     }
 
     private func closeLivePanels() {
         transcriptPanel.close()
         assistPanel.close()
+        livePanesHiddenForScreenShare = false
+    }
+
+    private func syncLivePanesForScreenShare() {
+        guard status == .recording else { return }
+        let shouldHide = LivePaneSharePolicy.shouldHidePanes(
+            settingEnabled: settings.hideLivePanesWhileSharing,
+            isUserScreenSharing: detector.isUserScreenSharing,
+            isRecording: true
+        )
+        if shouldHide {
+            transcriptPanel.hide()
+            assistPanel.hide()
+            livePanesHiddenForScreenShare = true
+            return
+        }
+        guard livePanesHiddenForScreenShare else { return }
+        livePanesHiddenForScreenShare = false
+        restoreLivePanesAfterScreenShare()
+    }
+
+    private func restoreLivePanesAfterScreenShare() {
+        if transcriptPanel.isPresented {
+            transcriptPanel.reveal()
+        } else {
+            showTranscript()
+            return
+        }
+        if assistPanel.isPresented {
+            assistPanel.reveal()
+        } else {
+            showAssistIfNeeded()
+        }
     }
 
     private func showErrorPanel() {

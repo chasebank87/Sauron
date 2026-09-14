@@ -18,6 +18,11 @@ final class SettingsStore {
         didSet { defaults.set(promptAlertEnabled, forKey: Keys.promptAlert) }
     }
 
+    /// Hide the transcript and Live Assist panes while this Mac is presenting.
+    var hideLivePanesWhileSharing: Bool {
+        didSet { defaults.set(hideLivePanesWhileSharing, forKey: Keys.hideLivePanesWhileSharing) }
+    }
+
     /// Calendar identifiers used for Up Next + meeting-context. Empty + configured = none.
     var subscribedCalendarIDs: [String] {
         didSet { defaults.set(subscribedCalendarIDs, forKey: Keys.subscribedCalendars) }
@@ -345,6 +350,7 @@ final class SettingsStore {
         hasCompletedOnboarding = defaults.bool(forKey: Keys.onboarding)
         watchForMeetings = defaults.object(forKey: Keys.watch) as? Bool ?? true
         promptAlertEnabled = defaults.object(forKey: Keys.promptAlert) as? Bool ?? true
+        hideLivePanesWhileSharing = defaults.object(forKey: Keys.hideLivePanesWhileSharing) as? Bool ?? true
         subscribedCalendarIDs = defaults.stringArray(forKey: Keys.subscribedCalendars) ?? []
         calendarSubscriptionsConfigured = defaults.bool(forKey: Keys.calendarsConfigured)
         defaultVisual = defaults.object(forKey: Keys.visual) as? Bool ?? true
@@ -402,6 +408,7 @@ final class SettingsStore {
         static let onboarding = "hasCompletedOnboarding"
         static let watch = "watchForMeetings"
         static let promptAlert = "promptAlertEnabled"
+        static let hideLivePanesWhileSharing = "hideLivePanesWhileSharing"
         static let subscribedCalendars = "subscribedCalendarIDs"
         static let calendarsConfigured = "calendarSubscriptionsConfigured"
         static let visual = "recordVisual"

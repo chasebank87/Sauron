@@ -28,7 +28,8 @@ final class GlassPanelController {
         placement: PanelPlacement,
         activates: Bool = false,
         usesPaneChrome: Bool = true,
-        animated: Bool = false
+        animated: Bool = false,
+        ordersFront: Bool = true
     ) {
         let hosted = AnyView(view.tint(SauronTheme.accent))
         let wantsNonactivating = !activates
@@ -39,12 +40,7 @@ final class GlassPanelController {
         if let hostingView, let panel {
             hostingView.rootView = hosted
             layout(panel: panel, size: size, placement: placement)
-            if animated {
-                animateIn(panel, activates: activates)
-            } else {
-                panel.alphaValue = 1
-                order(panel, activates: activates)
-            }
+            finishPresent(panel, activates: activates, animated: animated, ordersFront: ordersFront)
             return
         }
 
@@ -65,6 +61,8 @@ final class GlassPanelController {
         panel.backgroundColor = .clear
         panel.hasShadow = false
         panel.hidesOnDeactivate = false
+        // Keep overlays out of meeting screen shares even if hide-on-share misses.
+        panel.sharingType = .none
         panel.becomesKeyOnlyIfNeeded = !activates
         panel.isMovableByWindowBackground = true
         panel.titleVisibility = .hidden
@@ -104,12 +102,7 @@ final class GlassPanelController {
         self.panel = panel
         self.hostingView = hosting
         layout(panel: panel, size: size, placement: placement)
-        if animated {
-            animateIn(panel, activates: activates)
-        } else {
-            panel.alphaValue = 1
-            order(panel, activates: activates)
-        }
+        finishPresent(panel, activates: activates, animated: animated, ordersFront: ordersFront)
     }
 
     func close() {
@@ -119,7 +112,32 @@ final class GlassPanelController {
         hostingView = nil
     }
 
+    func hide() {
+        panel?.orderOut(nil)
+    }
+
+    func reveal() {
+        guard let panel else { return }
+        panel.alphaValue = 1
+        order(panel, activates: false)
+    }
+
     var isVisible: Bool { panel?.isVisible == true }
+
+    var isPresented: Bool { panel != nil }
+
+    private func finishPresent(_ panel: NSPanel, activates: Bool, animated: Bool, ordersFront: Bool) {
+        if animated, ordersFront {
+            animateIn(panel, activates: activates)
+            return
+        }
+        panel.alphaValue = 1
+        if ordersFront {
+            order(panel, activates: activates)
+        } else {
+            panel.orderOut(nil)
+        }
+    }
 
     private func animateIn(_ panel: NSPanel, activates: Bool) {
         let finalFrame = panel.frame

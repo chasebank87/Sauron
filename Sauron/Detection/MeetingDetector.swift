@@ -55,6 +55,8 @@ final class MeetingDetector {
     var candidate: MeetingCandidate?
     var lastError: String?
     private(set) var recordedMeetingEnded = false
+    /// True while this Mac appears to be presenting into the live meeting.
+    private(set) var isUserScreenSharing = false
 
     private var task: Task<Void, Never>?
     private var snoozedSessions: Set<String> = []
@@ -64,6 +66,7 @@ final class MeetingDetector {
     private var recordingWatch: MeetingCandidate?
     private var recordingMissingSince: Date?
     private var expiredPromptSessionKey: String?
+    private var screenShareHold = ScreenShareHold()
 
     private let pollInterval: Duration = .milliseconds(750)
     /// How long a catalog-matched window must stay visible before prompting.
@@ -156,12 +159,14 @@ final class MeetingDetector {
         pruneMutes()
         guard ScreenCaptureAccess.granted() else {
             lastError = "Screen Recording is off"
+            updateScreenShareWatch(windows: [])
             return
         }
         do {
             let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
             let matches = content.windows.compactMap(match(window:))
             lastError = nil
+            updateScreenShareWatch(windows: content.windows)
             updateRecordingWatch(matches: matches)
 
             let presentKeys = Set(matches.map(\.sessionKey))
@@ -204,7 +209,56 @@ final class MeetingDetector {
             }
         } catch {
             lastError = error.localizedDescription
+            updateScreenShareWatch(windows: [])
         }
+    }
+
+    private func updateScreenShareWatch(windows: [SCWindow]) {
+        let scProbes = windows.map {
+            LocalScreenShareSignal.WindowProbe(
+                title: $0.title ?? "",
+                bundleIdentifier: $0.owningApplication?.bundleIdentifier,
+                appName: $0.owningApplication?.applicationName
+            )
+        }
+        let detected = LocalScreenShareSignal.isShareDetected(
+            windows: scProbes + cgWindowProbes(),
+            runningApps: NSWorkspace.shared.runningApplications.map {
+                (bundleIdentifier: $0.bundleIdentifier, appName: $0.localizedName)
+            }
+        )
+        screenShareHold.update(detected: detected)
+        isUserScreenSharing = screenShareHold.isSharing
+    }
+
+    private func cgWindowProbes() -> [LocalScreenShareSignal.WindowProbe] {
+        guard let info = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements],
+            kCGNullWindowID
+        ) as? [[String: Any]] else {
+            return []
+        }
+        return info.map { window in
+            let title = window[kCGWindowName as String] as? String ?? ""
+            let owner = window[kCGWindowOwnerName as String] as? String ?? ""
+            let pid = cgWindowPID(window)
+            let bundle = pid.flatMap { NSRunningApplication(processIdentifier: $0)?.bundleIdentifier }
+            return LocalScreenShareSignal.WindowProbe(
+                title: title,
+                bundleIdentifier: bundle,
+                appName: owner
+            )
+        }
+    }
+
+    private func cgWindowPID(_ window: [String: Any]) -> pid_t? {
+        if let pid = window[kCGWindowOwnerPID as String] as? pid_t {
+            return pid
+        }
+        if let pid = window[kCGWindowOwnerPID as String] as? Int {
+            return pid_t(pid)
+        }
+        return nil
     }
 
     private func updateRecordingWatch(matches: [MeetingCandidate]) {
