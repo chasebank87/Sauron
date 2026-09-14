@@ -1,6 +1,6 @@
 cask "sauron" do
-  version "0.1.6"
-  sha256 "b982289a039eb1127ce9c2cbaa5baaf1287661fcc71e6feadcbcb50e19b81901"
+  version "0.1.7"
+  sha256 "c7f8327c340943ce14c375e8e8a4b19d1ffa9a2754d2724912eb23fbd8209fb2"
 
   url "https://github.com/chasebank87/Sauron/releases/download/v#{version}/Sauron-#{version}.zip"
   name "Sauron"

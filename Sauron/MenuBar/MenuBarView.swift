@@ -131,7 +131,7 @@ struct MenuBarView: View {
     }
 
     private var utility: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        HStack(alignment: .center, spacing: 8) {
             Button("Settings") {
                 dismissMenuBar()
                 DispatchQueue.main.async {
@@ -141,6 +141,8 @@ struct MenuBarView: View {
             }
             .observerGlassButton()
 
+            Spacer(minLength: 8)
+
             Button("Quit Sauron") {
                 dismissMenuBar()
                 NSApp.terminate(nil)
@@ -148,7 +150,6 @@ struct MenuBarView: View {
             .font(.system(size: 12, weight: .medium))
             .foregroundStyle(SauronTheme.red.opacity(0.78))
             .buttonStyle(.plain)
-            .padding(.leading, 2)
         }
     }
 
@@ -214,7 +215,10 @@ enum MenuBarPresentation {
     }
 
     static func chipIsLive(_ status: AppStatus) -> Bool {
-        status != .idle
+        switch status {
+        case .recording, .prompt: true
+        case .idle, .detecting, .processing: false
+        }
     }
 
     static func chipColor(for status: AppStatus) -> Color {
@@ -252,22 +256,32 @@ private struct MenuBarLiveDot: View {
                     .frame(width: 7, height: 7)
                     .scaleEffect(pulse ? 2.2 : 1)
                     .opacity(pulse ? 0 : 0.85)
+                    // Scope the forever pulse to this circle only — `withAnimation(.repeatForever)`
+                    // leaks into the MenuBarExtra and re-animates the whole popover on every refresh.
+                    .animation(
+                        .easeOut(duration: 1.35).repeatForever(autoreverses: false),
+                        value: pulse
+                    )
             }
             Circle()
                 .fill(color)
                 .frame(width: 7, height: 7)
         }
         .frame(width: 12, height: 12)
-        .onAppear { startPulseIfNeeded() }
-        .onChange(of: isLive) { _, _ in
-            pulse = false
-            startPulseIfNeeded()
+        .onAppear { syncPulse(isLive) }
+        .onChange(of: isLive) { _, live in
+            syncPulse(live)
         }
     }
 
-    private func startPulseIfNeeded() {
-        guard isLive else { return }
-        withAnimation(.easeOut(duration: 1.35).repeatForever(autoreverses: false)) {
+    private func syncPulse(_ live: Bool) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            pulse = false
+        }
+        guard live else { return }
+        DispatchQueue.main.async {
             pulse = true
         }
     }

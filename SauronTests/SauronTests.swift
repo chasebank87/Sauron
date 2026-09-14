@@ -858,10 +858,10 @@ final class MenuBarPresentationTests: XCTestCase {
 
     func testLiveDotTracksActiveStates() {
         XCTAssertFalse(MenuBarPresentation.chipIsLive(.idle))
-        XCTAssertTrue(MenuBarPresentation.chipIsLive(.detecting))
+        XCTAssertFalse(MenuBarPresentation.chipIsLive(.detecting))
         XCTAssertTrue(MenuBarPresentation.chipIsLive(.prompt))
         XCTAssertTrue(MenuBarPresentation.chipIsLive(.recording))
-        XCTAssertTrue(MenuBarPresentation.chipIsLive(.processing))
+        XCTAssertFalse(MenuBarPresentation.chipIsLive(.processing))
     }
 
     func testRecentIconsUsePeopleForRealMeetingsAndSparklesForGenerated() {
