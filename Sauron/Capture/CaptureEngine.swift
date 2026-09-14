@@ -173,6 +173,8 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         case .microphone:
             guard includeAudio else { return }
             // Keep AEC adapted while muted so unmuting doesn't dump a burst of echo.
+            // Writer + live You captions share this cancelled mic. Live Others still
+            // come from system audio (onSystemAudio), not this lane.
             let micBuffer = echoCanceller?.processNearEnd(sampleBuffer) ?? sampleBuffer
             if !isMicMuted {
                 writer?.appendMic(micBuffer)
