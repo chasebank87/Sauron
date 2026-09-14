@@ -1122,6 +1122,59 @@ final class AcousticEchoCancellerTests: XCTestCase {
         XCTAssertEqual(CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds, 1, accuracy: 0.0001)
     }
 
+    func testReplacingMicBufferKeepsSineAndAudioBufferList() {
+        let frames = 480
+        var sine = [Float](repeating: 0, count: frames)
+        for index in 0..<frames {
+            sine[index] = 0.5 * sin(2 * Float.pi * Float(index) / 40)
+        }
+        guard let original = AudioPCM.sampleBuffer(
+            mono: sine,
+            sampleRate: 48_000,
+            presentationTimeStamp: CMTime(value: 1_000, timescale: 48_000)
+        ) else {
+            XCTFail("could not wrap original mic buffer")
+            return
+        }
+
+        var listSize = 0
+        let sizeStatus = CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(
+            original,
+            bufferListSizeNeededOut: &listSize,
+            bufferListOut: nil,
+            bufferListSize: 0,
+            blockBufferAllocator: kCFAllocatorDefault,
+            blockBufferMemoryAllocator: kCFAllocatorDefault,
+            flags: 0,
+            blockBufferOut: nil
+        )
+        XCTAssertTrue(
+            sizeStatus == noErr || sizeStatus == kCMSampleBufferError_ArrayTooSmall,
+            "AEC output must expose an AudioBufferList for AAC, got \(sizeStatus)"
+        )
+        XCTAssertGreaterThan(listSize, 0)
+
+        let quieter = sine.map { $0 * 0.5 }
+        guard let replaced = AudioPCM.replacing(sampleBuffer: original, withMono: quieter),
+              let pcm = AudioPCM.buffer(from: replaced)
+        else {
+            XCTFail("could not round-trip replaced mic buffer")
+            return
+        }
+        let mix = AudioPCM.mixdown(pcm)
+        XCTAssertEqual(mix.count, frames)
+        XCTAssertEqual(mix[10], quieter[10], accuracy: 0.02)
+        XCTAssertEqual(
+            CMSampleBufferGetNumSamples(replaced),
+            CMItemCount(frames)
+        )
+        XCTAssertEqual(
+            CMSampleBufferGetPresentationTimeStamp(replaced).seconds,
+            CMSampleBufferGetPresentationTimeStamp(original).seconds,
+            accuracy: 0.0001
+        )
+    }
+
     func testEchoOnlyCancelsDelayedFarEnd() {
         let aec = AcousticEchoCanceller()
         let rate = AcousticEchoCanceller.processSampleRate
@@ -1194,6 +1247,72 @@ final class AcousticEchoCancellerTests: XCTestCase {
         // should stay in the local-speech ballpark, not collapse to residual echo.
         XCTAssertGreaterThan(outRMS, 1_500)
         XCTAssertLessThan(outRMS, 6_000)
+    }
+
+    func testSpeakerOnlyPlaybackIsNotTreatedAsLocalSpeech() {
+        let hop = AcousticEchoCanceller.frameSize
+        var far = [Int16](repeating: 0, count: hop)
+        var near = [Int16](repeating: 0, count: hop)
+        for index in 0..<hop {
+            let sample = Int16((12_000.0 * sin(2 * Double.pi * Double(index) / 18)).rounded())
+            far[index] = sample
+            near[index] = Int16((0.4 * Double(sample)).rounded())
+        }
+        let residual = near.enumerated().map { index, sample in
+            Int16((Double(sample) * 0.15).rounded())
+        }
+        XCTAssertTrue(
+            AcousticEchoCanceller.isSpeakerOnlyEcho(near: near, far: far, cancelled: residual)
+        )
+    }
+
+    func testLocalTalkoverIsKeptForYouLane() {
+        let hop = AcousticEchoCanceller.frameSize
+        var far = [Int16](repeating: 0, count: hop)
+        var near = [Int16](repeating: 0, count: hop)
+        var cancelled = [Int16](repeating: 0, count: hop)
+        for index in 0..<hop {
+            far[index] = Int16((10_000.0 * sin(2 * Double.pi * Double(index) / 20)).rounded())
+            cancelled[index] = Int16((8_000.0 * sin(2 * Double.pi * Double(index) / 9)).rounded())
+            near[index] = Int16(
+                max(-32767, min(32767, Double(far[index]) * 0.3 + Double(cancelled[index])))
+                    .rounded()
+            )
+        }
+        XCTAssertFalse(
+            AcousticEchoCanceller.isSpeakerOnlyEcho(near: near, far: far, cancelled: cancelled)
+        )
+    }
+
+    func testEchoOnlyMicIsSilencedForLiveYou() {
+        let aec = AcousticEchoCanceller()
+        let rate = AcousticEchoCanceller.processSampleRate
+        let hop = AcousticEchoCanceller.frameSize
+        let delay = Int(0.048 * Double(rate))
+        let total = rate * 3
+        var far = [Int16](repeating: 0, count: total)
+        var near = [Int16](repeating: 0, count: total)
+        for index in 0..<total {
+            let t = Double(index) / Double(rate)
+            let sample = 0.45 * sin(2 * Double.pi * 220 * t)
+                + 0.30 * sin(2 * Double.pi * 347 * t)
+            far[index] = Int16((sample * 18_000).rounded())
+        }
+        for index in delay..<total {
+            near[index] = Int16((0.4 * Double(far[index - delay])).rounded())
+        }
+
+        var output = [Int16]()
+        for offset in stride(from: 0, to: total - hop, by: hop) {
+            let time = Double(offset) / Double(rate)
+            aec.ingestFarEnd16k(Array(far[offset..<(offset + hop)]), time: time)
+            output.append(contentsOf: aec.processNearEnd16k(Array(near[offset..<(offset + hop)]), time: time))
+        }
+
+        let settle = rate
+        let measured = min(output.count, total)
+        let outRMS = rms(output[settle..<measured])
+        XCTAssertLessThan(outRMS, 400, "speaker-only residual should be muted for You captions, got \(outRMS)")
     }
 
     private func rms(_ samples: ArraySlice<Int16>) -> Double {

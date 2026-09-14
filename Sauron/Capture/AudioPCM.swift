@@ -176,6 +176,9 @@ enum AudioPCM {
         return output
     }
 
+    /// Rebuilds a writer-safe audio sample buffer. AEC used to flatten PCM into one
+    /// `CMBlockBuffer` while keeping ScreenCaptureKit's format description; AAC then
+    /// treated that blob as garbage and wrote loud static to `mic.m4a`.
     static func replacing(sampleBuffer: CMSampleBuffer, withMono mono: [Float]) -> CMSampleBuffer? {
         guard let pcm = buffer(from: sampleBuffer) else { return nil }
         let frames = Int(pcm.frameLength)
@@ -198,6 +201,33 @@ enum AudioPCM {
         return makeSampleBuffer(
             from: pcm,
             presentationTimeStamp: CMTime(value: Int64(nanos), timescale: 1_000_000_000)
+        )
+    }
+
+    static func sampleBuffer(
+        mono: [Float],
+        sampleRate: Double,
+        presentationTimeStamp: CMTime,
+        decodeTimeStamp: CMTime = .invalid
+    ) -> CMSampleBuffer? {
+        let frames = mono.count
+        guard frames > 0, sampleRate > 0 else { return nil }
+        guard let format = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: sampleRate,
+            channels: 1,
+            interleaved: false
+        ) else { return nil }
+        guard let pcm = AVAudioPCMBuffer(
+            pcmFormat: format,
+            frameCapacity: AVAudioFrameCount(frames)
+        ) else { return nil }
+        pcm.frameLength = AVAudioFrameCount(frames)
+        write(mono: mono, into: pcm)
+        return makeSampleBuffer(
+            from: pcm,
+            presentationTimeStamp: presentationTimeStamp,
+            decodeTimeStamp: decodeTimeStamp
         )
     }
 
