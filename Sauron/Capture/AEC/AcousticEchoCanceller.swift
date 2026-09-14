@@ -131,6 +131,9 @@ final class AcousticEchoCanceller: @unchecked Sendable {
             }
             if Self.rms(out) > Self.rms(frame) * 2.5 {
                 cancelledPending.append(contentsOf: frame)
+            } else if Self.isSpeakerOnlyEcho(near: frame, far: far, cancelled: out) {
+                // Live "You" (and the mic file) must not keep speaker bleed Apple Speech would caption.
+                cancelledPending.append(contentsOf: [Int16](repeating: 0, count: Self.frameSize))
             } else {
                 cancelledPending.append(contentsOf: out)
             }
@@ -192,5 +195,45 @@ final class AcousticEchoCanceller: @unchecked Sendable {
             acc += value * value
         }
         return sqrt(acc / Double(samples.count))
+    }
+
+    /// True when this frame is meeting audio on the speakers, not the local talker.
+    /// Used so live "You" dictation does not caption playback from the laptop speakers.
+    /// System/"Others" transcription is unchanged (separate lane).
+    static func isSpeakerOnlyEcho(near: [Int16], far: [Int16], cancelled: [Int16]) -> Bool {
+        let farRMS = rms(far)
+        guard farRMS > 400 else { return false }
+
+        let nearRMS = rms(near)
+        let outRMS = rms(cancelled)
+        let farCorr = abs(normalizedCorrelation(near, far))
+        let residualCorr = abs(normalizedCorrelation(cancelled, far))
+
+        if outRMS < nearRMS * 0.35, outRMS < farRMS * 0.55 {
+            return true
+        }
+        if residualCorr > 0.32 || farCorr > 0.45 {
+            let localSpeech = outRMS > 1_400 && outRMS > farRMS * 0.22 && residualCorr < 0.55
+            return !localSpeech
+        }
+        return false
+    }
+
+    static func normalizedCorrelation(_ left: [Int16], _ right: [Int16]) -> Double {
+        let count = min(left.count, right.count)
+        guard count > 0 else { return 0 }
+        var dot = 0.0
+        var leftEnergy = 0.0
+        var rightEnergy = 0.0
+        for index in 0..<count {
+            let a = Double(left[index])
+            let b = Double(right[index])
+            dot += a * b
+            leftEnergy += a * a
+            rightEnergy += b * b
+        }
+        let denom = sqrt(leftEnergy * rightEnergy)
+        guard denom > 1 else { return 0 }
+        return dot / denom
     }
 }

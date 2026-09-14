@@ -127,7 +127,7 @@ struct GeneralSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Toggle("Reject speaker echo", isOn: $settings.echoCancellationEnabled)
-                Text("When meeting audio plays from this Mac’s speakers, subtract it from the mic so the recording is just you. Remote/system audio stays on its own track.")
+                Text("Listens to the mic (You) and system/meeting audio (Others). When meeting audio plays from this Mac’s speakers, it is subtracted from the mic so live You captions and the mic file are just you.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

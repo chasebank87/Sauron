@@ -1214,6 +1214,72 @@ final class AcousticEchoCancellerTests: XCTestCase {
         XCTAssertLessThan(outRMS, 6_000)
     }
 
+    func testSpeakerOnlyPlaybackIsNotTreatedAsLocalSpeech() {
+        let hop = AcousticEchoCanceller.frameSize
+        var far = [Int16](repeating: 0, count: hop)
+        var near = [Int16](repeating: 0, count: hop)
+        for index in 0..<hop {
+            let sample = Int16((12_000.0 * sin(2 * Double.pi * Double(index) / 18)).rounded())
+            far[index] = sample
+            near[index] = Int16((0.4 * Double(sample)).rounded())
+        }
+        let residual = near.enumerated().map { index, sample in
+            Int16((Double(sample) * 0.15).rounded())
+        }
+        XCTAssertTrue(
+            AcousticEchoCanceller.isSpeakerOnlyEcho(near: near, far: far, cancelled: residual)
+        )
+    }
+
+    func testLocalTalkoverIsKeptForYouLane() {
+        let hop = AcousticEchoCanceller.frameSize
+        var far = [Int16](repeating: 0, count: hop)
+        var near = [Int16](repeating: 0, count: hop)
+        var cancelled = [Int16](repeating: 0, count: hop)
+        for index in 0..<hop {
+            far[index] = Int16((10_000.0 * sin(2 * Double.pi * Double(index) / 20)).rounded())
+            cancelled[index] = Int16((8_000.0 * sin(2 * Double.pi * Double(index) / 9)).rounded())
+            near[index] = Int16(
+                max(-32767, min(32767, Double(far[index]) * 0.3 + Double(cancelled[index])))
+                    .rounded()
+            )
+        }
+        XCTAssertFalse(
+            AcousticEchoCanceller.isSpeakerOnlyEcho(near: near, far: far, cancelled: cancelled)
+        )
+    }
+
+    func testEchoOnlyMicIsSilencedForLiveYou() {
+        let aec = AcousticEchoCanceller()
+        let rate = AcousticEchoCanceller.processSampleRate
+        let hop = AcousticEchoCanceller.frameSize
+        let delay = Int(0.048 * Double(rate))
+        let total = rate * 3
+        var far = [Int16](repeating: 0, count: total)
+        var near = [Int16](repeating: 0, count: total)
+        for index in 0..<total {
+            let t = Double(index) / Double(rate)
+            let sample = 0.45 * sin(2 * Double.pi * 220 * t)
+                + 0.30 * sin(2 * Double.pi * 347 * t)
+            far[index] = Int16((sample * 18_000).rounded())
+        }
+        for index in delay..<total {
+            near[index] = Int16((0.4 * Double(far[index - delay])).rounded())
+        }
+
+        var output = [Int16]()
+        for offset in stride(from: 0, to: total - hop, by: hop) {
+            let time = Double(offset) / Double(rate)
+            aec.ingestFarEnd16k(Array(far[offset..<(offset + hop)]), time: time)
+            output.append(contentsOf: aec.processNearEnd16k(Array(near[offset..<(offset + hop)]), time: time))
+        }
+
+        let settle = rate
+        let measured = min(output.count, total)
+        let outRMS = rms(output[settle..<measured])
+        XCTAssertLessThan(outRMS, 400, "speaker-only residual should be muted for You captions, got \(outRMS)")
+    }
+
     private func rms(_ samples: ArraySlice<Int16>) -> Double {
         guard !samples.isEmpty else { return 0 }
         var acc = 0.0
