@@ -530,6 +530,7 @@ final class AppState {
                 audioSource: promptAudioSource,
                 videoTarget: promptVideoTarget,
                 microphoneDeviceID: priority.first?.captureDeviceID,
+                echoCancellation: settings.echoCancellationEnabled,
                 folder: MediaStore.folder(for: meeting.id)
             )
             // Do not publish media paths yet — the files are still being written.
