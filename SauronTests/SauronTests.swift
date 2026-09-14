@@ -222,6 +222,15 @@ final class MeetingSummaryTests: XCTestCase {
     }
 }
 
+final class MenuBarMarkAssetTests: XCTestCase {
+    func testMenuBarMarkIsTemplateSizedForStatusItem() {
+        let image = NSImage(named: "MenuBarMark")
+        XCTAssertNotNil(image)
+        XCTAssertEqual(image?.isTemplate, true)
+        XCTAssertEqual(image?.size, NSSize(width: 18, height: 18))
+    }
+}
+
 final class PermissionProbeTests: XCTestCase {
     func testNewlyGrantedScreenRequiresRelaunch() {
         let live = PermissionProbe.Snapshot(screen: false, windows: false, mic: true, speech: true, calendar: true)
