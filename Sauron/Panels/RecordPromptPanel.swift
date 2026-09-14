@@ -338,7 +338,13 @@ struct TranscriptPanelView: View {
                 CombinedAudioPresence(
                     monitor: appState.audioMonitor,
                     micLabel: appState.activeMicDisplayName,
-                    micMuted: appState.isMicMuted
+                    micMuted: appState.isMicMuted,
+                    availableMics: appState.availableMics,
+                    activeMicID: appState.activeMicDeviceID,
+                    canChangeMic: appState.status == .recording,
+                    onSelectMic: { device in
+                        Task { await appState.selectMicrophone(device) }
+                    }
                 )
 
                 if appState.audioMonitor.micSilent || appState.audioMonitor.remoteSilent {
@@ -454,6 +460,10 @@ private struct CombinedAudioPresence: View {
     let monitor: AudioSignalMonitor
     var micLabel: String = AudioSignalSource.microphone.shortTitle
     var micMuted: Bool = false
+    var availableMics: [AudioInputDevice] = []
+    var activeMicID: String = AudioInputDevice.systemDefaultID
+    var canChangeMic: Bool = false
+    var onSelectMic: ((AudioInputDevice) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -462,11 +472,7 @@ private struct CombinedAudioPresence: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(monitor.anySilent ? Color.orange : Color.secondary)
                 Spacer(minLength: 0)
-                sourceChip(
-                    title: micLabel,
-                    active: monitor.micLevel > 0.03,
-                    silent: monitor.micSilent
-                )
+                micChip
                 sourceChip(
                     title: monitor.remoteSource.liveLabel,
                     active: monitor.remoteLevel > 0.03,
@@ -502,20 +508,70 @@ private struct CombinedAudioPresence: View {
         }
     }
 
-    private func sourceChip(title: String, active: Bool, silent: Bool) -> some View {
-        Text(title)
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(silent ? Color.orange : (active ? Color.primary : Color.secondary))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background {
-                Capsule()
-                    .fill(silent
-                          ? Color.orange.opacity(0.14)
-                          : (active
-                             ? SauronTheme.accent.opacity(0.14)
-                             : SauronTheme.fillQuiet(for: colorScheme)))
+    @ViewBuilder
+    private var micChip: some View {
+        let chip = sourceChip(
+            title: micLabel,
+            active: monitor.micLevel > 0.03,
+            silent: monitor.micSilent,
+            showsMenuChevron: canChangeMic && !availableMics.isEmpty
+        )
+        if canChangeMic, !availableMics.isEmpty, let onSelectMic {
+            Menu {
+                ForEach(availableMics) { device in
+                    Button {
+                        onSelectMic(device)
+                    } label: {
+                        if device.id == activeMicID {
+                            Label(device.name, systemImage: "checkmark")
+                        } else {
+                            Text(device.name)
+                        }
+                    }
+                }
+            } label: {
+                chip
             }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .accessibilityLabel("Microphone")
+            .accessibilityValue(micLabel)
+            .accessibilityHint("Choose a different input while recording")
+        } else {
+            chip
+                .accessibilityLabel("Microphone")
+                .accessibilityValue(micLabel)
+        }
+    }
+
+    private func sourceChip(
+        title: String,
+        active: Bool,
+        silent: Bool,
+        showsMenuChevron: Bool = false
+    ) -> some View {
+        HStack(spacing: 4) {
+            Text(title)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(silent ? Color.orange : (active ? Color.primary : Color.secondary))
+                .lineLimit(1)
+            if showsMenuChevron {
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background {
+            Capsule()
+                .fill(silent
+                      ? Color.orange.opacity(0.14)
+                      : (active
+                         ? SauronTheme.accent.opacity(0.14)
+                         : SauronTheme.fillQuiet(for: colorScheme)))
+        }
+        .contentShape(Capsule())
     }
 }
 

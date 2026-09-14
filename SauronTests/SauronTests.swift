@@ -1,4 +1,5 @@
 import AppKit
+import Darwin
 import XCTest
 @testable import Sauron
 
@@ -218,6 +219,15 @@ final class MeetingSummaryTests: XCTestCase {
         let summary = Summarizer.parse("not json at all")
         XCTAssertEqual(summary.summary, "not json at all")
         XCTAssertEqual(summary.title, "Meeting notes")
+    }
+}
+
+final class MenuBarMarkAssetTests: XCTestCase {
+    func testMenuBarMarkIsTemplateSizedForStatusItem() {
+        let image = NSImage(named: "MenuBarMark")
+        XCTAssertNotNil(image)
+        XCTAssertEqual(image?.isTemplate, true)
+        XCTAssertEqual(image?.size, NSSize(width: 18, height: 18))
     }
 }
 
@@ -864,4 +874,118 @@ final class MenuBarPresentationTests: XCTestCase {
         XCTAssertTrue(MenuBarPresentation.recentIsGenerated(.simulated))
     }
 }
+final class AcousticEchoCancellerTests: XCTestCase {
+    func testResampleRoundTripKeepsRequestedCount() {
+        let input = (0..<480).map { sin(Float($0) / 8) }
+        let down = AudioPCM.resample(input, from: 48_000, to: 16_000)
+        XCTAssertEqual(down.count, 160)
+        let up = AudioPCM.resample(down, from: 16_000, to: 48_000, count: 480)
+        XCTAssertEqual(up.count, 480)
+    }
 
+    func testInt16RoundTrip() {
+        let values: [Float] = [0, 0.5, -0.5, 1, -1]
+        let ints = AudioPCM.int16(from: values)
+        let back = AudioPCM.floats(from: ints)
+        XCTAssertEqual(back[0], 0, accuracy: 0.002)
+        XCTAssertEqual(back[1], 0.5, accuracy: 0.002)
+        XCTAssertEqual(back[4], -1, accuracy: 0.002)
+    }
+
+    func testEchoOnlyCancelsDelayedFarEnd() {
+        let aec = AcousticEchoCanceller()
+        let rate = AcousticEchoCanceller.processSampleRate
+        let hop = AcousticEchoCanceller.frameSize
+        let delay = Int(0.048 * Double(rate))
+        let total = rate * 3
+        var far = [Int16](repeating: 0, count: total)
+        var near = [Int16](repeating: 0, count: total)
+        for index in 0..<total {
+            let t = Double(index) / Double(rate)
+            let sample = 0.45 * sin(2 * Double.pi * 220 * t)
+                + 0.30 * sin(2 * Double.pi * 347 * t)
+                + 0.18 * sin(2 * Double.pi * 513 * t)
+            far[index] = Int16((sample * 18_000).rounded())
+        }
+        for index in delay..<total {
+            near[index] = Int16((0.4 * Double(far[index - delay])).rounded())
+        }
+
+        var output = [Int16]()
+        output.reserveCapacity(total)
+        for offset in stride(from: 0, to: total - hop, by: hop) {
+            let time = Double(offset) / Double(rate)
+            aec.ingestFarEnd16k(Array(far[offset..<(offset + hop)]), time: time)
+            output.append(contentsOf: aec.processNearEnd16k(Array(near[offset..<(offset + hop)]), time: time))
+        }
+
+        let settle = rate
+        let measured = min(output.count, total)
+        XCTAssertGreaterThan(measured, settle + hop)
+        let nearRMS = rms(near[settle..<measured])
+        let outRMS = rms(output[settle..<measured])
+        XCTAssertGreaterThan(nearRMS, 500)
+        let erle = 10 * log10((nearRMS * nearRMS) / (outRMS * outRMS + 1e-9))
+        XCTAssertGreaterThan(erle, 12, "expected >12 dB echo return loss, got \(erle)")
+    }
+
+    func testLocalToneSurvivesEchoCancellation() {
+        let aec = AcousticEchoCanceller()
+        let rate = AcousticEchoCanceller.processSampleRate
+        let hop = AcousticEchoCanceller.frameSize
+        let delay = Int(0.048 * Double(rate))
+        let total = rate * 3
+        var far = [Int16](repeating: 0, count: total)
+        var near = [Int16](repeating: 0, count: total)
+        for index in 0..<total {
+            let t = Double(index) / Double(rate)
+            let sample = 0.45 * sin(2 * Double.pi * 220 * t)
+                + 0.30 * sin(2 * Double.pi * 347 * t)
+            far[index] = Int16((sample * 18_000).rounded())
+            var mix = 0.25 * sin(2 * Double.pi * 137 * t) * 20_000
+            if index >= delay {
+                mix += 0.4 * Double(far[index - delay])
+            }
+            mix = max(-32767, min(32767, mix))
+            near[index] = Int16(mix.rounded())
+        }
+
+        var output = [Int16]()
+        for offset in stride(from: 0, to: total - hop, by: hop) {
+            let time = Double(offset) / Double(rate)
+            aec.ingestFarEnd16k(Array(far[offset..<(offset + hop)]), time: time)
+            output.append(contentsOf: aec.processNearEnd16k(Array(near[offset..<(offset + hop)]), time: time))
+        }
+
+        let settle = rate
+        let measured = min(output.count, total)
+        let outRMS = rms(output[settle..<measured])
+        // Local tone alone is ~3536 RMS; echo-only near is ~2900. Cancelled output
+        // should stay in the local-speech ballpark, not collapse to residual echo.
+        XCTAssertGreaterThan(outRMS, 1_500)
+        XCTAssertLessThan(outRMS, 6_000)
+    }
+
+    private func rms(_ samples: ArraySlice<Int16>) -> Double {
+        guard !samples.isEmpty else { return 0 }
+        var acc = 0.0
+        for sample in samples {
+            let value = Double(sample)
+            acc += value * value
+        }
+        return sqrt(acc / Double(samples.count))
+    }
+}
+
+final class EchoCancellationSettingsTests: XCTestCase {
+    @MainActor
+    func testEchoCancellationDefaultsOn() {
+        let name = "observer.tests.aec.\(UUID().uuidString)"
+        let suite = UserDefaults(suiteName: name)!
+        suite.removePersistentDomain(forName: name)
+        let settings = SettingsStore(defaults: suite)
+        XCTAssertTrue(settings.echoCancellationEnabled)
+        settings.echoCancellationEnabled = false
+        XCTAssertFalse(settings.echoCancellationEnabled)
+    }
+}

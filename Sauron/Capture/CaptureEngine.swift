@@ -27,6 +27,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
     private var usesCoreAudioSystemTap = false
     private var audioSource: CaptureAudioSource = .system
     private var microphoneDeviceID: String?
+    private var echoCanceller: AcousticEchoCanceller?
     private var isStopping = false
     private var micMuted = false
 
@@ -41,6 +42,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         audioSource: CaptureAudioSource,
         videoTarget: CaptureVideoTarget = .auto,
         microphoneDeviceID: String?,
+        echoCancellation: Bool,
         folder: URL
     ) async throws {
         includeVideo = modes.contains(.visual)
@@ -49,6 +51,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         usesCoreAudioSystemTap = includeAudio && candidate.kind.needsCoreAudioSystemTap
         self.audioSource = usesCoreAudioSystemTap ? .system : audioSource
         self.microphoneDeviceID = microphoneDeviceID
+        echoCanceller = includeAudio && echoCancellation ? AcousticEchoCanceller() : nil
         isStopping = false
         writer = MediaWriter(folder: folder, includeVideo: includeVideo, includeAudio: includeAudio)
 
@@ -83,6 +86,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
                 let tap = SystemAudioTap()
                 tap.onBuffer = { [weak self] sampleBuffer in
                     guard let self, self.includeAudio else { return }
+                    self.echoCanceller?.ingestFarEnd(sampleBuffer)
                     self.writer?.appendSystem(sampleBuffer)
                     self.onSystemAudio?(sampleBuffer)
                 }
@@ -116,6 +120,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
     /// Switch mic mid-recording using the priority fallback list.
     func switchMicrophone(to deviceID: String?) async throws {
         guard includeAudio, let audioStream else { return }
+        echoCanceller?.reset()
         microphoneDeviceID = deviceID
         let configuration = makeAudioConfiguration(
             microphoneDeviceID: deviceID,
@@ -142,6 +147,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         videoStream = nil
         audioStream = nil
         systemTap = nil
+        echoCanceller = nil
         tap?.stop()
         if let video {
             try? await video.stopCapture()
@@ -161,13 +167,16 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
             writer?.appendVideo(sampleBuffer)
         case .audio:
             guard includeAudio, !usesCoreAudioSystemTap else { return }
+            echoCanceller?.ingestFarEnd(sampleBuffer)
             writer?.appendSystem(sampleBuffer)
             onSystemAudio?(sampleBuffer)
         case .microphone:
             guard includeAudio else { return }
+            // Keep AEC adapted while muted so unmuting doesn't dump a burst of echo.
+            let micBuffer = echoCanceller?.processNearEnd(sampleBuffer) ?? sampleBuffer
             if !isMicMuted {
-                writer?.appendMic(sampleBuffer)
-                onMicAudio?(sampleBuffer)
+                writer?.appendMic(micBuffer)
+                onMicAudio?(micBuffer)
             }
         @unknown default:
             break
@@ -289,6 +298,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         configuration.capturesAudio = captureSystemViaSCK
         configuration.excludesCurrentProcessAudio = true
         configuration.captureMicrophone = true
+        // SCK has no echo-cancellation flag; speaker bleed is removed in AcousticEchoCanceller.
         if let microphoneDeviceID, !microphoneDeviceID.isEmpty {
             configuration.microphoneCaptureDeviceID = microphoneDeviceID
         }

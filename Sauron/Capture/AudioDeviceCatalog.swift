@@ -56,4 +56,14 @@ enum AudioDeviceCatalog {
         }
         return result
     }
+
+    static func device(id: String, savedIDs: [String]) -> AudioInputDevice? {
+        resolvedPriority(savedIDs: savedIDs).first(where: { $0.id == id })
+    }
+
+    /// Whether a concrete capture device ID is still plugged in (System Default always counts as present).
+    static func isAvailable(id: String) -> Bool {
+        if id == AudioInputDevice.systemDefaultID { return true }
+        return physicalInputs().contains(where: { $0.id == id })
+    }
 }
