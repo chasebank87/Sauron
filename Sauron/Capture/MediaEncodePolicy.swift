@@ -1,5 +1,7 @@
 import AVFoundation
+import CoreVideo
 import Foundation
+import VideoToolbox
 
 /// Shared encode knobs: prefer VideoToolbox/GPU (HEVC), and shed CPU work under heat or Low Power Mode.
 enum MediaEncodePolicy {
@@ -13,6 +15,42 @@ enum MediaEncodePolicy {
 
     /// Prefer hardware HEVC when the writer accepts it; H.264 remains the fallback.
     static var prefersHEVC: Bool { true }
+
+    /// Screen-capture pixel format the media block can encode without a CPU BGRA→YUV convert.
+    static var capturePixelFormat: OSType {
+        kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
+    }
+
+    /// Software BGRA fallback if ScreenCaptureKit rejects biplanar 420.
+    static var capturePixelFormatFallback: OSType {
+        kCVPixelFormatType_32BGRA
+    }
+
+    /// VideoToolbox compression properties: hardware encoder, realtime, no B-frame reorder.
+    static func videoCompressionProperties(
+        codec: AVVideoCodecType,
+        width: Int,
+        height: Int
+    ) -> [String: Any] {
+        let fps = liveTargetFPS
+        var properties: [String: Any] = [
+            AVVideoAverageBitRateKey: liveBitRate(width: width, height: height, codec: codec),
+            AVVideoExpectedSourceFrameRateKey: fps,
+            AVVideoMaxKeyFrameIntervalKey: max(2, fps * 2),
+            kVTCompressionPropertyKey_RealTime as String: true,
+            kVTCompressionPropertyKey_AllowFrameReordering as String: false,
+            kVTCompressionPropertyKey_MaximizePowerEfficiency as String: true,
+            kVTCompressionPropertyKey_EncoderSpecification as String: [
+                kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder as String: true
+            ]
+        ]
+        if codec == .hevc {
+            properties[kVTCompressionPropertyKey_ProfileLevel as String] = kVTProfileLevel_HEVC_Main_AutoLevel
+        } else {
+            properties[AVVideoProfileLevelKey] = AVVideoProfileLevelH264HighAutoLevel
+        }
+        return properties
+    }
 
     /// Target capture frame rate — drops frames above this to keep encode cheap.
     static var liveTargetFPS: Int {

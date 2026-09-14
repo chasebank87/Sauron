@@ -3,6 +3,7 @@ import CoreImage
 import CoreMedia
 import CoreVideo
 import Foundation
+import Metal
 
 final class MediaWriter: @unchecked Sendable {
     /// Utility QoS so encode yields to UI / meeting audio under load.
@@ -22,7 +23,17 @@ final class MediaWriter: @unchecked Sendable {
     private var lastAcceptedVideoPTS = CMTime.invalid
     /// When true, a video frame is already being processed — drop newcomers instead of queueing CPU work.
     private var videoBusy = false
-    private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
+    private let ciContext: CIContext = {
+        let options: [CIContextOption: Any] = [
+            .cacheIntermediates: false,
+            .useSoftwareRenderer: false
+        ]
+        if let device = MTLCreateSystemDefaultDevice() {
+            return CIContext(mtlDevice: device, options: options)
+        }
+        return CIContext(options: options)
+    }()
+    private var capturePixelFormat: OSType = MediaEncodePolicy.capturePixelFormat
 
     let videoURL: URL?
     let micURL: URL?
@@ -129,6 +140,7 @@ final class MediaWriter: @unchecked Sendable {
 
         videoWidth = evenPixelDimension(CVPixelBufferGetWidth(imageBuffer))
         videoHeight = evenPixelDimension(CVPixelBufferGetHeight(imageBuffer))
+        capturePixelFormat = CVPixelBufferGetPixelFormatType(imageBuffer)
         addVideoInput(to: writer, hint: nil)
     }
 
@@ -141,13 +153,11 @@ final class MediaWriter: @unchecked Sendable {
         }
 
         for codec in codecs {
-            let fps = MediaEncodePolicy.liveTargetFPS
-            let bitRate = MediaEncodePolicy.liveBitRate(width: videoWidth, height: videoHeight, codec: codec)
-            var compression: [String: Any] = [
-                AVVideoAverageBitRateKey: bitRate,
-                AVVideoExpectedSourceFrameRateKey: fps,
-                AVVideoMaxKeyFrameIntervalKey: max(2, fps * 2)
-            ]
+            var compression = MediaEncodePolicy.videoCompressionProperties(
+                codec: codec,
+                width: videoWidth,
+                height: videoHeight
+            )
             if codec == .h264 {
                 compression[AVVideoProfileLevelKey] = AVVideoProfileLevelH264HighAutoLevel
             }
@@ -168,6 +178,7 @@ final class MediaWriter: @unchecked Sendable {
                 input = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
             }
             input.expectsMediaDataInRealTime = true
+            input.performsMultiPassEncodingIfSupported = false
             guard writer.canAdd(input) else { continue }
 
             writer.add(input)
@@ -175,10 +186,11 @@ final class MediaWriter: @unchecked Sendable {
             videoAdaptor = AVAssetWriterInputPixelBufferAdaptor(
                 assetWriterInput: input,
                 sourcePixelBufferAttributes: [
-                    kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA),
+                    kCVPixelBufferPixelFormatTypeKey as String: Int(capturePixelFormat),
                     kCVPixelBufferWidthKey as String: videoWidth,
                     kCVPixelBufferHeightKey as String: videoHeight,
-                    kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any]
+                    kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any],
+                    kCVPixelBufferMetalCompatibilityKey as String: true
                 ]
             )
             return
@@ -197,10 +209,9 @@ final class MediaWriter: @unchecked Sendable {
                 nil,
                 videoWidth,
                 videoHeight,
-                kCVPixelFormatType_32BGRA,
+                capturePixelFormat,
                 [
-                    kCVPixelBufferCGImageCompatibilityKey: true,
-                    kCVPixelBufferCGBitmapContextCompatibilityKey: true,
+                    kCVPixelBufferMetalCompatibilityKey: true,
                     kCVPixelBufferIOSurfacePropertiesKey: [:] as [String: Any]
                 ] as CFDictionary,
                 &output

@@ -1,5 +1,7 @@
 import AppKit
+import CoreVideo
 import Darwin
+import VideoToolbox
 import XCTest
 @testable import Sauron
 
@@ -1181,5 +1183,29 @@ final class EchoCancellationSettingsTests: XCTestCase {
         XCTAssertTrue(settings.echoCancellationEnabled)
         settings.echoCancellationEnabled = false
         XCTAssertFalse(settings.echoCancellationEnabled)
+    }
+}
+
+final class MediaEncodePolicyTests: XCTestCase {
+    func testHardwareHEVCEncoderIsRequested() {
+        let properties = MediaEncodePolicy.videoCompressionProperties(
+            codec: .hevc,
+            width: 1920,
+            height: 1080
+        )
+        XCTAssertEqual(properties[kVTCompressionPropertyKey_RealTime as String] as? Bool, true)
+        XCTAssertEqual(properties[kVTCompressionPropertyKey_AllowFrameReordering as String] as? Bool, false)
+        let spec = properties[kVTCompressionPropertyKey_EncoderSpecification as String] as? [String: Any]
+        XCTAssertEqual(
+            spec?[kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder as String] as? Bool,
+            true
+        )
+        XCTAssertEqual(MediaEncodePolicy.capturePixelFormat, kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)
+    }
+
+    func testResample48kTo16kKeepsThird() {
+        let input = (0..<480).map { Float($0) }
+        let down = AudioPCM.resample(input, from: 48_000, to: 16_000)
+        XCTAssertEqual(down.count, 160)
     }
 }

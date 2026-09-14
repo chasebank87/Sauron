@@ -1,3 +1,4 @@
+import Accelerate
 import AVFoundation
 import CoreMedia
 import Foundation
@@ -50,33 +51,54 @@ enum AudioPCM {
         return pcm
     }
 
-    /// Average channels to mono in −1…1.
+    /// Average channels to mono in −1…1 using Accelerate (SIMD), not a per-sample Swift loop.
     static func mixdown(_ pcm: AVAudioPCMBuffer) -> [Float] {
         let frames = Int(pcm.frameLength)
         let channels = Int(pcm.format.channelCount)
         guard frames > 0, channels > 0 else { return [] }
-        var mono = [Float](repeating: 0, count: frames)
-        let scale = 1 / Float(channels)
+        let count = vDSP_Length(frames)
         if let data = pcm.floatChannelData {
-            for channel in 0..<channels {
-                for frame in 0..<frames {
-                    mono[frame] += data[channel][frame]
-                }
+            if channels == 1 {
+                return Array(UnsafeBufferPointer(start: data[0], count: frames))
             }
-            if channels > 1 {
-                for frame in 0..<frames { mono[frame] *= scale }
+            var mono = [Float](repeating: 0, count: frames)
+            mono.withUnsafeMutableBufferPointer { dest in
+                guard let out = dest.baseAddress else { return }
+                vDSP_vadd(data[0], 1, data[1], 1, out, 1, count)
+                if channels > 2 {
+                    for channel in 2..<channels {
+                        vDSP_vadd(out, 1, data[channel], 1, out, 1, count)
+                    }
+                }
+                var scale = 1 / Float(channels)
+                vDSP_vsmul(out, 1, &scale, out, 1, count)
             }
             return mono
         }
         if let data = pcm.int16ChannelData {
+            var mono = [Float](repeating: 0, count: frames)
+            var scratch = [Float](repeating: 0, count: frames)
             let toFloat: Float = 1 / 32767
-            for channel in 0..<channels {
-                for frame in 0..<frames {
-                    mono[frame] += Float(data[channel][frame]) * toFloat
+            mono.withUnsafeMutableBufferPointer { dest in
+                scratch.withUnsafeMutableBufferPointer { temp in
+                    guard let out = dest.baseAddress, let converted = temp.baseAddress else { return }
+                    vDSP_vflt16(data[0], 1, converted, 1, count)
+                    if channels == 1 {
+                        var scale = toFloat
+                        vDSP_vsmul(converted, 1, &scale, out, 1, count)
+                        return
+                    }
+                    vDSP_vflt16(data[1], 1, out, 1, count)
+                    vDSP_vadd(converted, 1, out, 1, out, 1, count)
+                    if channels > 2 {
+                        for channel in 2..<channels {
+                            vDSP_vflt16(data[channel], 1, converted, 1, count)
+                            vDSP_vadd(out, 1, converted, 1, out, 1, count)
+                        }
+                    }
+                    var scale = toFloat / Float(channels)
+                    vDSP_vsmul(out, 1, &scale, out, 1, count)
                 }
-            }
-            if channels > 1 {
-                for frame in 0..<frames { mono[frame] *= scale }
             }
             return mono
         }
@@ -91,27 +113,66 @@ enum AudioPCM {
         }
         if outCount <= 0 { return [] }
         if input.count == 1 { return [Float](repeating: input[0], count: outCount) }
+
+        // 48 kHz → 16 kHz is the AEC path; average groups of 3 with Accelerate.
+        if count == nil, abs(sourceRate - destRate * 3) < 1, input.count >= 3 {
+            let grouped = input.count / 3
+            var output = [Float](repeating: 0, count: grouped)
+            input.withUnsafeBufferPointer { src in
+                output.withUnsafeMutableBufferPointer { dst in
+                    guard let source = src.baseAddress, let dest = dst.baseAddress else { return }
+                    for index in 0..<grouped {
+                        let base = index * 3
+                        dest[index] = (source[base] + source[base + 1] + source[base + 2]) * (1 / 3)
+                    }
+                }
+            }
+            return output
+        }
+
         var output = [Float](repeating: 0, count: outCount)
         let scale = Double(input.count - 1) / Double(max(outCount - 1, 1))
-        for index in 0..<outCount {
-            let src = Double(index) * scale
-            let i0 = min(Int(src), input.count - 1)
-            let i1 = min(i0 + 1, input.count - 1)
-            let frac = Float(src - Double(i0))
-            output[index] = input[i0] + (input[i1] - input[i0]) * frac
+        input.withUnsafeBufferPointer { src in
+            guard let source = src.baseAddress else { return }
+            for index in 0..<outCount {
+                let srcIndex = Double(index) * scale
+                let i0 = min(Int(srcIndex), input.count - 1)
+                let i1 = min(i0 + 1, input.count - 1)
+                let frac = Float(srcIndex - Double(i0))
+                output[index] = source[i0] + (source[i1] - source[i0]) * frac
+            }
         }
         return output
     }
 
     static func int16(from floats: [Float]) -> [Int16] {
-        floats.map { sample in
-            let clipped = max(-1, min(1, sample))
-            return Int16((clipped * 32767).rounded())
+        let count = vDSP_Length(floats.count)
+        guard floats.count > 0 else { return [] }
+        var clipped = [Float](repeating: 0, count: floats.count)
+        var low: Float = -1
+        var high: Float = 1
+        floats.withUnsafeBufferPointer { src in
+            guard let base = src.baseAddress else { return }
+            vDSP_vclip(base, 1, &low, &high, &clipped, 1, count)
         }
+        var scale: Float = 32767
+        vDSP_vsmul(clipped, 1, &scale, &clipped, 1, count)
+        var output = [Int16](repeating: 0, count: floats.count)
+        vDSP_vfixr16(clipped, 1, &output, 1, count)
+        return output
     }
 
     static func floats(from ints: [Int16]) -> [Float] {
-        ints.map { Float($0) / 32767 }
+        let count = vDSP_Length(ints.count)
+        guard ints.count > 0 else { return [] }
+        var output = [Float](repeating: 0, count: ints.count)
+        ints.withUnsafeBufferPointer { src in
+            guard let base = src.baseAddress else { return }
+            vDSP_vflt16(base, 1, &output, 1, count)
+        }
+        var scale: Float = 1 / 32767
+        vDSP_vsmul(output, 1, &scale, &output, 1, count)
+        return output
     }
 
     static func replacing(sampleBuffer: CMSampleBuffer, withMono mono: [Float]) -> CMSampleBuffer? {

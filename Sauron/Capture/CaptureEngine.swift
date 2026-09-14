@@ -110,11 +110,24 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
 
         if includeVideo {
             let videoConfiguration = makeVideoConfiguration(filter: videoFilter, content: content)
-            let stream = SCStream(filter: videoFilter, configuration: videoConfiguration, delegate: self)
-            try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: videoQueue)
-            try await stream.startCapture()
-            videoStream = stream
+            do {
+                videoStream = try await startVideoStream(filter: videoFilter, configuration: videoConfiguration)
+            } catch {
+                var fallback = videoConfiguration
+                fallback.pixelFormat = MediaEncodePolicy.capturePixelFormatFallback
+                videoStream = try await startVideoStream(filter: videoFilter, configuration: fallback)
+            }
         }
+    }
+
+    private func startVideoStream(
+        filter: SCContentFilter,
+        configuration: SCStreamConfiguration
+    ) async throws -> SCStream {
+        let stream = SCStream(filter: filter, configuration: configuration, delegate: self)
+        try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: videoQueue)
+        try await stream.startCapture()
+        return stream
     }
 
     /// Switch mic mid-recording using the priority fallback list.
@@ -317,8 +330,8 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         configuration.capturesAudio = false
         configuration.captureMicrophone = false
         configuration.showsCursor = true
-        configuration.queueDepth = 5
-        configuration.pixelFormat = kCVPixelFormatType_32BGRA
+        configuration.queueDepth = 3
+        configuration.pixelFormat = MediaEncodePolicy.capturePixelFormat
         configuration.includeChildWindows = true
 
         let width: CGFloat
@@ -339,9 +352,12 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         // H.264 requires even dimensions — odd heights produce a stripe / corrupt frames.
         configuration.width = Self.evenPixelDimension(Int((width * scale).rounded()))
         configuration.height = Self.evenPixelDimension(Int((height * scale).rounded()))
-        configuration.minimumFrameInterval = CMTime(value: 1, timescale: 20)
-        // Prefer sharper text on Retina meeting UIs.
-        configuration.scalesToFit = false
+        configuration.minimumFrameInterval = CMTime(
+            value: 1,
+            timescale: CMTimeScale(max(1, MediaEncodePolicy.liveTargetFPS))
+        )
+        // GPU-scale in ScreenCaptureKit so VideoToolbox gets encoder-sized frames (no CI/CPU rescale).
+        configuration.scalesToFit = true
         return configuration
     }
 
