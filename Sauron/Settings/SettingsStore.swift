@@ -50,6 +50,12 @@ final class SettingsStore {
         didSet { defaults.set(meetingAppAudioOnly, forKey: Keys.meetingAppAudio) }
     }
 
+    /// When true, speaker playback captured as system audio is subtracted from the mic
+    /// (acoustic echo / speaker-to-mic bleed). Default on.
+    var echoCancellationEnabled: Bool {
+        didSet { defaults.set(echoCancellationEnabled, forKey: Keys.echoCancellation) }
+    }
+
     /// Ordered mic device IDs after System Default. System Default is always applied as #1 at resolve time.
     var micPriorityIDs: [String] {
         didSet { defaults.set(micPriorityIDs, forKey: Keys.micPriority) }
@@ -357,6 +363,7 @@ final class SettingsStore {
         defaultAudio = defaults.object(forKey: Keys.audio) as? Bool ?? true
         defaultTranscript = defaults.object(forKey: Keys.transcript) as? Bool ?? true
         meetingAppAudioOnly = defaults.bool(forKey: Keys.meetingAppAudio)
+        echoCancellationEnabled = defaults.object(forKey: Keys.echoCancellation) as? Bool ?? true
         micPriorityIDs = defaults.stringArray(forKey: Keys.micPriority) ?? []
         let providerRaw = defaults.string(forKey: Keys.provider) ?? LLMProviderKind.ollama.rawValue
         providerKind = LLMProviderKind(rawValue: providerRaw) ?? .ollama
@@ -415,6 +422,7 @@ final class SettingsStore {
         static let audio = "recordAudio"
         static let transcript = "recordTranscript"
         static let meetingAppAudio = "meetingAppAudioOnly"
+        static let echoCancellation = "echoCancellationEnabled"
         static let micPriority = "micPriorityIDs"
         static let provider = "llmProvider"
         static let ollamaURL = "ollamaURL"

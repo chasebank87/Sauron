@@ -8,7 +8,8 @@ import Foundation
 ///
 /// FaceTime (and Continuity phone) call audio is produced by system daemons like
 /// `avconferenced`, which ScreenCaptureKit cannot see. A stereo global process tap
-/// hears that mix; SCK remains used for the microphone.
+/// hears that mix; SCK remains used for the microphone. Buffers are stamped
+/// with host time so acoustic echo cancellation can align them with the SCK mic.
 final class SystemAudioTap: @unchecked Sendable {
     var onBuffer: ((CMSampleBuffer) -> Void)?
 
@@ -18,7 +19,6 @@ final class SystemAudioTap: @unchecked Sendable {
     private var ioProcID: AudioDeviceIOProcID?
     private var asbd = AudioStreamBasicDescription()
     private var formatDescription: CMAudioFormatDescription?
-    private var sampleTime: Int64 = 0
     private var isRunning = false
 
     func start() throws {
@@ -148,7 +148,6 @@ final class SystemAudioTap: @unchecked Sendable {
         }
         tapID = AudioObjectID(kAudioObjectUnknown)
         formatDescription = nil
-        sampleTime = 0
     }
 
     // MARK: - Buffers
@@ -166,13 +165,16 @@ final class SystemAudioTap: @unchecked Sendable {
         let frameCount = Int(first.mDataByteSize) / bytesPerFrame
         guard frameCount > 0 else { return }
 
+        // Host time so AEC can align this far-end with ScreenCaptureKit mic timestamps.
+        let endHost = AudioConvertHostTimeToNanos(AudioGetCurrentHostTime())
+        let durationNanos = UInt64((Double(frameCount) / max(asbd.mSampleRate, 1) * 1_000_000_000).rounded())
+        let startHost = endHost > durationNanos ? endHost - durationNanos : 0
         var sampleBuffer: CMSampleBuffer?
         var timing = CMSampleTimingInfo(
             duration: CMTime(value: 1, timescale: CMTimeScale(asbd.mSampleRate)),
-            presentationTimeStamp: CMTime(value: sampleTime, timescale: CMTimeScale(asbd.mSampleRate)),
+            presentationTimeStamp: CMTime(value: Int64(startHost), timescale: 1_000_000_000),
             decodeTimeStamp: .invalid
         )
-        sampleTime += Int64(frameCount)
 
         let createStatus = CMSampleBufferCreate(
             allocator: kCFAllocatorDefault,
