@@ -874,6 +874,200 @@ final class MenuBarPresentationTests: XCTestCase {
         XCTAssertTrue(MenuBarPresentation.recentIsGenerated(.simulated))
     }
 }
+
+final class LivePaneSharePolicyTests: XCTestCase {
+    @MainActor
+    func testHideLivePanesWhileSharingDefaultsOn() {
+        let suite = "observer.tests.hide-panes.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+        let settings = SettingsStore(defaults: defaults)
+        XCTAssertTrue(settings.hideLivePanesWhileSharing)
+        settings.hideLivePanesWhileSharing = false
+        let reloaded = SettingsStore(defaults: defaults)
+        XCTAssertFalse(reloaded.hideLivePanesWhileSharing)
+    }
+
+    func testHidesOnlyWhenSettingOnSharingAndRecording() {
+        XCTAssertTrue(
+            LivePaneSharePolicy.shouldHidePanes(
+                settingEnabled: true,
+                isUserScreenSharing: true,
+                isRecording: true
+            )
+        )
+        XCTAssertFalse(
+            LivePaneSharePolicy.shouldHidePanes(
+                settingEnabled: false,
+                isUserScreenSharing: true,
+                isRecording: true
+            )
+        )
+        XCTAssertFalse(
+            LivePaneSharePolicy.shouldHidePanes(
+                settingEnabled: true,
+                isUserScreenSharing: false,
+                isRecording: true
+            )
+        )
+        XCTAssertFalse(
+            LivePaneSharePolicy.shouldHidePanes(
+                settingEnabled: true,
+                isUserScreenSharing: true,
+                isRecording: false
+            )
+        )
+    }
+}
+
+final class ScreenShareHoldTests: XCTestCase {
+    func testHidesImmediatelyAndRestoresAfterGrace() {
+        var hold = ScreenShareHold()
+        let start = Date()
+        hold.update(detected: true, now: start)
+        XCTAssertTrue(hold.isSharing)
+        hold.update(detected: false, now: start.addingTimeInterval(0.3))
+        XCTAssertTrue(hold.isSharing, "brief gaps should not restore the pane")
+        hold.update(detected: false, now: start.addingTimeInterval(1.0))
+        XCTAssertFalse(hold.isSharing)
+        hold.update(detected: true, now: start.addingTimeInterval(1.1))
+        XCTAssertTrue(hold.isSharing)
+    }
+}
+
+final class LocalScreenShareSignalTests: XCTestCase {
+    func testZoomLocalShareToolbar() {
+        XCTAssertTrue(
+            LocalScreenShareSignal.indicatesLocalShare(
+                windowTitle: "You are sharing your screen",
+                bundleIdentifier: "us.zoom.xos",
+                appName: "zoom.us"
+            )
+        )
+        XCTAssertTrue(
+            LocalScreenShareSignal.indicatesLocalShare(
+                windowTitle: "You are sharing",
+                bundleIdentifier: "us.zoom.xos",
+                appName: "zoom.us"
+            )
+        )
+        XCTAssertTrue(
+            LocalScreenShareSignal.indicatesLocalShare(
+                windowTitle: "Stop sharing",
+                bundleIdentifier: "us.zoom.xos",
+                appName: "zoom.us"
+            )
+        )
+    }
+
+    func testZoomMeetingWithoutShareStaysVisible() {
+        XCTAssertFalse(
+            LocalScreenShareSignal.indicatesLocalShare(
+                windowTitle: "Weekly sync",
+                bundleIdentifier: "us.zoom.xos",
+                appName: "zoom.us"
+            )
+        )
+    }
+
+    func testRemoteParticipantShareDoesNotHide() {
+        XCTAssertFalse(
+            LocalScreenShareSignal.indicatesLocalShare(
+                windowTitle: "Jamie is sharing their screen",
+                bundleIdentifier: "us.zoom.xos",
+                appName: "zoom.us"
+            )
+        )
+    }
+
+    func testTeamsAndMeetPresenterTitles() {
+        XCTAssertTrue(
+            LocalScreenShareSignal.indicatesLocalShare(
+                windowTitle: "You're presenting",
+                bundleIdentifier: "com.microsoft.teams2",
+                appName: "Microsoft Teams"
+            )
+        )
+        XCTAssertTrue(
+            LocalScreenShareSignal.indicatesLocalShare(
+                windowTitle: "Presenting now - Meet - Google Chrome",
+                bundleIdentifier: "com.google.Chrome",
+                appName: "Google Chrome"
+            )
+        )
+        XCTAssertTrue(
+            LocalScreenShareSignal.indicatesLocalShare(
+                windowTitle: "Standup - Meet - Presenting - Google Chrome",
+                bundleIdentifier: "com.google.Chrome",
+                appName: "Google Chrome"
+            )
+        )
+    }
+
+    func testMeetTabWithoutPresentingDoesNotHide() {
+        XCTAssertFalse(
+            LocalScreenShareSignal.indicatesLocalShare(
+                windowTitle: "Standup - Meet - Google Chrome",
+                bundleIdentifier: "com.google.Chrome",
+                appName: "Google Chrome"
+            )
+        )
+    }
+
+    func testSharePointAndShareholderDoNotHide() {
+        XCTAssertFalse(
+            LocalScreenShareSignal.indicatesLocalShare(
+                windowTitle: "SharePoint - Google Chrome",
+                bundleIdentifier: "com.google.Chrome",
+                appName: "Google Chrome"
+            )
+        )
+        XCTAssertFalse(
+            LocalScreenShareSignal.indicatesLocalShare(
+                windowTitle: "Shareholder meeting notes",
+                bundleIdentifier: "com.google.Chrome",
+                appName: "Google Chrome"
+            )
+        )
+    }
+
+    func testFaceTimeScreenSharing() {
+        XCTAssertTrue(
+            LocalScreenShareSignal.indicatesLocalShare(
+                windowTitle: "Screen Sharing",
+                bundleIdentifier: "com.apple.FaceTime",
+                appName: "FaceTime"
+            )
+        )
+    }
+
+    func testCptHostHelperCountsAsLocalZoomShare() {
+        XCTAssertTrue(
+            LocalScreenShareSignal.isShareDetected(
+                windows: [],
+                runningApps: [(bundleIdentifier: "us.zoom.CptHost", appName: "CptHost")]
+            )
+        )
+        XCTAssertFalse(
+            LocalScreenShareSignal.isShareDetected(
+                windows: [
+                    .init(title: "Weekly sync", bundleIdentifier: "us.zoom.xos", appName: "zoom.us")
+                ],
+                runningApps: [(bundleIdentifier: "us.zoom.xos", appName: "zoom.us")]
+            )
+        )
+    }
+
+    func testSauronOwnRecordingIsNotAShareSignal() {
+        XCTAssertFalse(
+            LocalScreenShareSignal.indicatesLocalShare(
+                windowTitle: "Live Assist",
+                bundleIdentifier: "app.sauron.Sauron",
+                appName: "Sauron"
+            )
+        )
+    }
+}
 final class AcousticEchoCancellerTests: XCTestCase {
     func testResampleRoundTripKeepsRequestedCount() {
         let input = (0..<480).map { sin(Float($0) / 8) }

@@ -108,6 +108,12 @@ struct GeneralSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            Section("Live panes") {
+                Toggle("Hide while sharing your screen", isOn: $settings.hideLivePanesWhileSharing)
+                Text("Hides the transcript and Live Assist panes when you present in a meeting, so others don't see that you're recording locally. The panes come back when you stop sharing.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             CalendarSubscriptionsSection()
                 .environment(appState)
             Section("Default capture") {
