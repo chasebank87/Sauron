@@ -13,11 +13,11 @@ Brand assets (mark, lockups, App Icon layers, palette) live in [`brand/`](brand/
 ## Install
 
 ```bash
-brew tap chasebank87/sauron
+brew tap chasebank87/sauron https://github.com/chasebank87/Sauron
 brew install --cask sauron
 ```
 
-Upgrade with `brew update && brew upgrade --cask sauron`. See [docs/HOMEBREW.md](docs/HOMEBREW.md) for release packaging and cask maintenance.
+Upgrade with `brew update && brew upgrade --cask sauron`. See [docs/HOMEBREW.md](docs/HOMEBREW.md) for release packaging and cask maintenance. The tap is this repo (`Casks/sauron.rb`), not Homebrew’s official taps.
 
 ## Requirements
 

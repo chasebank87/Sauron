@@ -5,9 +5,11 @@ Sauron ships as a notarized macOS app via GitHub Releases and a **personal tap**
 ## Install
 
 ```bash
-brew tap chasebank87/sauron
+brew tap chasebank87/sauron https://github.com/chasebank87/Sauron
 brew install --cask sauron
 ```
+
+`brew tap chasebank87/sauron` with **no URL** clones `chasebank87/homebrew-sauron`. Sauron’s cask lives in **this** repo, so the install command must pass the GitHub URL above.
 
 ## Upgrades
 
@@ -24,13 +26,10 @@ brew upgrade --cask sauron
 
 1. Build + notarize: `./scripts/package-release.sh X.Y.Z` (with `CODE_SIGN_IDENTITY` + `NOTARIZE_PROFILE`)
 2. Publish GitHub Release `vX.Y.Z` with `Sauron-X.Y.Z.zip`
-3. Bump `version` and `sha256` in:
-   - [`Casks/sauron.rb`](../Casks/sauron.rb) (this repo)
-   - `chasebank87/homebrew-sauron` (`Casks/sauron.rb`)
-   - Official `homebrew-cask` via `brew bump-cask-pr sauron --version X.Y.Z` once accepted upstream
-4. Push the tap; users’ next `brew update && brew upgrade --cask sauron` picks it up
+3. Bump `version` and `sha256` in [`Casks/sauron.rb`](../Casks/sauron.rb) in this repo (the custom tap)
+4. Push this repo; users’ next `brew update && brew upgrade --cask sauron` picks it up
 
-`livecheck` (GitHub latest) lets `brew livecheck --cask sauron` and `brew bump-cask-pr` detect new tags.
+`livecheck` (GitHub latest) lets `brew livecheck --cask sauron` detect new tags. Do **not** run `brew bump-cask-pr` against official Homebrew taps.
 
 ## Build a release zip
 
@@ -47,14 +46,6 @@ export CODE_SIGN_IDENTITY="Developer ID Application: Chase Elder (MZSC4FTLNA)"
 ```
 
 Upload `dist/Sauron-0.1.0.zip` to a GitHub Release tagged `v0.1.0`.
-
-## Official homebrew-cask
-
-After the cask is merged upstream, bump with:
-
-```bash
-brew bump-cask-pr sauron --version X.Y.Z
-```
 
 ## Permissions
 
