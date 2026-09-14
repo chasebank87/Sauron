@@ -120,6 +120,10 @@ struct GeneralSettingsView: View {
                 Text("Off captures all Mac audio. On limits remote audio to the meeting app (Zoom, Teams, etc.).")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Toggle("Reject speaker echo", isOn: $settings.echoCancellationEnabled)
+                Text("Stops meeting audio playing from this Mac’s speakers from being recorded on your microphone. Leave on unless you hear artifacts with headphones.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Section("Storage") {
                 VStack(alignment: .leading, spacing: 8) {

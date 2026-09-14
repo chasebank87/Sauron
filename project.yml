@@ -26,6 +26,10 @@ targets:
         excludes:
           - Info.plist
           - Sauron.entitlements
+          - Capture/AEC/speex/COPYING
+          - Capture/AEC/speex/include
+          - Capture/AEC/speex/lib/*.h
+          - Capture/AEC/*.h
     settings:
       base:
         PRODUCT_NAME: Sauron
@@ -50,6 +54,12 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         SWIFT_STRICT_CONCURRENCY: targeted
         SWIFT_EMIT_LOC_STRINGS: YES
+        SWIFT_OBJC_BRIDGING_HEADER: Sauron/Sauron-Bridging-Header.h
+        HEADER_SEARCH_PATHS:
+          - "$(SRCROOT)/Sauron/Capture/AEC"
+          - "$(SRCROOT)/Sauron/Capture/AEC/speex/include"
+          - "$(SRCROOT)/Sauron/Capture/AEC/speex/lib"
+        OTHER_CFLAGS: "$(inherited) -DHAVE_CONFIG_H -Wno-everything"
         LD_RUNPATH_SEARCH_PATHS:
           - "$(inherited)"
           - "@executable_path/../Frameworks"

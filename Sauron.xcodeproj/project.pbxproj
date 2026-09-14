@@ -99,6 +99,15 @@
 		F811916A1F2CCE0B89E7B2EE /* FluidAudioModelStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BAB738C3D6CD3024684BFAF /* FluidAudioModelStore.swift */; };
 		FA9A261795F6D11F075517C1 /* LiquidGlassScrollChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC4E0974B86E14839A439EB3 /* LiquidGlassScrollChrome.swift */; };
 		FEA14FC697B5A2304E36521D /* DashboardAsksTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = C643F0962D4EB961673F5542 /* DashboardAsksTab.swift */; };
+
+		C0AECAEC00000000000001 /* AcousticEchoCanceller.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000021 /* AcousticEchoCanceller.swift */; };
+		C0AECAEC00000000000002 /* SauronAECBridge.c in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000022 /* SauronAECBridge.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -w"; }; };
+		C0AECAEC00000000000003 /* mdf.c in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000023 /* mdf.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -w"; }; };
+		C0AECAEC00000000000004 /* preprocess.c in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000024 /* preprocess.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -w"; }; };
+		C0AECAEC00000000000005 /* fftwrap.c in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000025 /* fftwrap.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -w"; }; };
+		C0AECAEC00000000000006 /* filterbank.c in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000026 /* filterbank.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -w"; }; };
+		C0AECAEC00000000000007 /* kiss_fft.c in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000027 /* kiss_fft.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -w"; }; };
+		C0AECAEC00000000000008 /* kiss_fftr.c in Sources */ = {isa = PBXBuildFile; fileRef = C0AECAEC00000000000028 /* kiss_fftr.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -w"; }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -324,6 +333,7 @@
 		7220DEBEB4A5A7130999FC36 /* Capture */ = {
 			isa = PBXGroup;
 			children = (
+				C0AECAEC00000000000040 /* AEC */,
 				164692D51C8A94E32656A0D1 /* AudioDeviceCatalog.swift */,
 				6F53ADB8512545A02C501A26 /* AudioInputDeviceWatcher.swift */,
 				F4C3ADC0C48A8E1E4D77165E /* AudioPCM.swift */,
@@ -456,6 +466,7 @@
 				89DA843BD3631F4E2659D36E /* Settings */,
 				1E3164DFDCADAA02F329CD6A /* Transcription */,
 				CCC17F03C2466F5C4B8D60BD /* Assets.xcassets */,
+				C0AECAEC00000000000029 /* Sauron-Bridging-Header.h */,
 				C7769DE6ECE22495B70D803B /* SauronApp.swift */,
 			);
 			path = Sauron;
@@ -467,6 +478,38 @@
 				DAB2F533C9E9835FCE420DA7 /* SauronTests.swift */,
 			);
 			path = SauronTests;
+			sourceTree = "<group>";
+		};
+
+		C0AECAEC00000000000040 /* AEC */ = {
+			isa = PBXGroup;
+			children = (
+				C0AECAEC00000000000021 /* AcousticEchoCanceller.swift */,
+				C0AECAEC00000000000022 /* SauronAECBridge.c */,
+				C0AECAEC00000000000041 /* speex */,
+			);
+			path = AEC;
+			sourceTree = "<group>";
+		};
+		C0AECAEC00000000000041 /* speex */ = {
+			isa = PBXGroup;
+			children = (
+				C0AECAEC00000000000042 /* lib */,
+			);
+			path = speex;
+			sourceTree = "<group>";
+		};
+		C0AECAEC00000000000042 /* lib */ = {
+			isa = PBXGroup;
+			children = (
+				C0AECAEC00000000000025 /* fftwrap.c */,
+				C0AECAEC00000000000026 /* filterbank.c */,
+				C0AECAEC00000000000027 /* kiss_fft.c */,
+				C0AECAEC00000000000028 /* kiss_fftr.c */,
+				C0AECAEC00000000000023 /* mdf.c */,
+				C0AECAEC00000000000024 /* preprocess.c */,
+			);
+			path = lib;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -578,6 +621,7 @@
 				67B2FF22BDF9D6B50A333893 /* AudioInputDeviceWatcher.swift in Sources */,
 				48B52484E977C0C718D19E76 /* AudioPCM.swift in Sources */,
 				676BCA749D601A0026FA6411 /* AudioSignalMonitor.swift in Sources */,
+				C0AECAEC00000000000001 /* AcousticEchoCanceller.swift in Sources */,
 				3243435383D4B412E85AC535 /* BrandMark.swift in Sources */,
 				478DD42FA1848670C7FE4E0F /* CalendarSignal.swift in Sources */,
 				8D576191CDD25804184A6787 /* CaptureEngine.swift in Sources */,
@@ -637,6 +681,13 @@
 				B8ED2A43E45E2E57C25CE40A /* RecordPromptPanel.swift in Sources */,
 				CD98F6566875DBFA6F622FF8 /* RecordingAmbientBackground.swift in Sources */,
 				BF2581954DE70D184D135BAD /* ReportWindow.swift in Sources */,
+				C0AECAEC00000000000002 /* SauronAECBridge.c in Sources */,
+				C0AECAEC00000000000003 /* mdf.c in Sources */,
+				C0AECAEC00000000000004 /* preprocess.c in Sources */,
+				C0AECAEC00000000000005 /* fftwrap.c in Sources */,
+				C0AECAEC00000000000006 /* filterbank.c in Sources */,
+				C0AECAEC00000000000007 /* kiss_fft.c in Sources */,
+				C0AECAEC00000000000008 /* kiss_fftr.c in Sources */,
 				4DDD7DB4D9DEB8DF80A2344C /* SauronApp.swift in Sources */,
 				5FC2CEDAB8BA30675FFEE5A4 /* ScreenCaptureAccess.swift in Sources */,
 				C7D2BFA242EBA6DA302CB1E2 /* SettingsStore.swift in Sources */,
@@ -696,6 +747,13 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.Sauron;
 				PRODUCT_NAME = Sauron;
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "Sauron/Sauron-Bridging-Header.h";
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Sauron/Capture/AEC",
+					"$(SRCROOT)/Sauron/Capture/AEC/speex/include",
+					"$(SRCROOT)/Sauron/Capture/AEC/speex/lib",
+				);
+				OTHER_CFLAGS = "$(inherited) -DHAVE_CONFIG_H -Wno-everything";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = targeted;
 			};
@@ -729,6 +787,13 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.Sauron;
 				PRODUCT_NAME = Sauron;
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "Sauron/Sauron-Bridging-Header.h";
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Sauron/Capture/AEC",
+					"$(SRCROOT)/Sauron/Capture/AEC/speex/include",
+					"$(SRCROOT)/Sauron/Capture/AEC/speex/lib",
+				);
+				OTHER_CFLAGS = "$(inherited) -DHAVE_CONFIG_H -Wno-everything";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = targeted;
 			};
