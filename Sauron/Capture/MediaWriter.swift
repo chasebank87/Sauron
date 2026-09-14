@@ -166,7 +166,8 @@ final class MediaWriter: @unchecked Sendable {
                 AVVideoCodecKey: codec,
                 AVVideoWidthKey: videoWidth,
                 AVVideoHeightKey: videoHeight,
-                AVVideoCompressionPropertiesKey: compression
+                AVVideoCompressionPropertiesKey: compression,
+                AVVideoEncoderSpecificationKey: MediaEncodePolicy.videoEncoderSpecification
             ]
 
             guard writer.canApply(outputSettings: settings, forMediaType: .video) else { continue }

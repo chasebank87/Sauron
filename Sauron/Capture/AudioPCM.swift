@@ -280,10 +280,10 @@ enum AudioPCM {
 
         let listStatus = CMSampleBufferSetDataBufferFromAudioBufferList(
             sampleBuffer,
-            kCFAllocatorDefault,
-            kCFAllocatorDefault,
-            0,
-            pcm.audioBufferList
+            blockBufferAllocator: kCFAllocatorDefault,
+            blockBufferMemoryAllocator: kCFAllocatorDefault,
+            flags: 0,
+            bufferList: pcm.audioBufferList
         )
         guard listStatus == noErr else { return nil }
         return sampleBuffer

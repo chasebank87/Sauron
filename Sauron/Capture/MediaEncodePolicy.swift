@@ -39,10 +39,7 @@ enum MediaEncodePolicy {
             AVVideoMaxKeyFrameIntervalKey: max(2, fps * 2),
             kVTCompressionPropertyKey_RealTime as String: true,
             kVTCompressionPropertyKey_AllowFrameReordering as String: false,
-            kVTCompressionPropertyKey_MaximizePowerEfficiency as String: true,
-            kVTCompressionPropertyKey_EncoderSpecification as String: [
-                kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder as String: true
-            ]
+            kVTCompressionPropertyKey_MaximizePowerEfficiency as String: true
         ]
         if codec == .hevc {
             properties[kVTCompressionPropertyKey_ProfileLevel as String] = kVTProfileLevel_HEVC_Main_AutoLevel
@@ -50,6 +47,13 @@ enum MediaEncodePolicy {
             properties[AVVideoProfileLevelKey] = AVVideoProfileLevelH264HighAutoLevel
         }
         return properties
+    }
+
+    /// Top-level AVVideoSettings key asking VideoToolbox for a hardware encoder.
+    static var videoEncoderSpecification: [String: Any] {
+        [
+            kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder as String: true
+        ]
     }
 
     /// Target capture frame rate — drops frames above this to keep encode cheap.
