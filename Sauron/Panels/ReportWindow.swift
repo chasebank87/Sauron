@@ -65,7 +65,10 @@ struct ReportDetailView: View {
                 }
                 if let summary = meeting.summary {
                     summarySections(summary)
-                    updateSummaryButton
+                    HStack(spacing: 8) {
+                        updateSummaryButton
+                        reprocessButton
+                    }
                 } else if meeting.status == .failed {
                     GlassCard {
                         Text(appState.streamPreview.isEmpty
@@ -74,7 +77,10 @@ struct ReportDetailView: View {
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
-                    updateSummaryButton
+                    HStack(spacing: 8) {
+                        updateSummaryButton
+                        reprocessButton
+                    }
                 }
                 if !meeting.memoryCitations.isEmpty {
                     memoryCitationsCard
@@ -138,6 +144,17 @@ struct ReportDetailView: View {
         }
         .observerGlassButton()
         .disabled(appState.isSummarizing || meeting.namedTranscript.isEmpty)
+    }
+
+    /// Unlike `updateSummaryButton` (re-runs the AI summary only), this redoes the
+    /// whole post-recording pipeline against the raw saved media: diarization,
+    /// transcript enhancement, audio mixing, video composition, then the summary.
+    private var reprocessButton: some View {
+        Button("Reprocess recording") {
+            appState.reprocessMeeting(meeting)
+        }
+        .observerGlassButton()
+        .disabled(appState.isSummarizing || !meeting.hasPlayableMedia)
     }
 
     /// True for a meeting left at `.processing` from a previous session (app quit
