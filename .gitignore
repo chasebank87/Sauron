@@ -1,6 +1,7 @@
 .DS_Store
 DerivedData/
 DerivedDataRelease/
+DerivedDataBrand/
 Driver/build-SauronAudio/
 dist/
 build/

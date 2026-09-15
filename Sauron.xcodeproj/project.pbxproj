@@ -23,6 +23,7 @@
 		2328BEF8DFF38C86AE90AB8A /* LMStudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFC258887C774ECC15376E24 /* LMStudio.swift */; };
 		233C6C7ADB41CE31419415B6 /* MCPProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E4BC7E5DDEA8EAA89CBF27 /* MCPProtocol.swift */; };
 		28C78BEF9E4DADD0CD0D4052 /* Speech.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2E0F4F2BEC7D8273CD847AC4 /* Speech.framework */; };
+		2A3BC2D26D08828E278C4087 /* DiarizationReprocessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85E60D03CC63BF2ADEAEE4D3 /* DiarizationReprocessor.swift */; };
 		2A55790E075CC271B2BBBDC2 /* SauronAudioDriverInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D6A894C1800B3AB743D0B77 /* SauronAudioDriverInstaller.swift */; };
 		2CDB9EAD992121C3D27621D4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CCC17F03C2466F5C4B8D60BD /* Assets.xcassets */; };
 		2D542DFDD639F5A0E8E7EE02 /* DocumentTextExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15211A717601E5D65B5D5E95 /* DocumentTextExtractor.swift */; };
@@ -186,6 +187,7 @@
 		7D0F7A361849C15BF7EE35F9 /* LiveAssistPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveAssistPanel.swift; sourceTree = "<group>"; };
 		826937D9FBB472590D1FC80A /* mdf.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = mdf.c; sourceTree = "<group>"; };
 		8512556CB5E8B8E5F1EE200A /* TranscriptionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionEngine.swift; sourceTree = "<group>"; };
+		85E60D03CC63BF2ADEAEE4D3 /* DiarizationReprocessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiarizationReprocessor.swift; sourceTree = "<group>"; };
 		864C79DFACFEE1C17BD49859 /* MeetingWindowPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingWindowPicker.swift; sourceTree = "<group>"; };
 		8C70F1C20AA597B4CAA74D0E /* HardwareAudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareAudioPlayer.swift; sourceTree = "<group>"; };
 		8D468CFCF3B07323F6601D6F /* SpeakerProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerProfileStore.swift; sourceTree = "<group>"; };
@@ -270,6 +272,7 @@
 		1E3164DFDCADAA02F329CD6A /* Transcription */ = {
 			isa = PBXGroup;
 			children = (
+				85E60D03CC63BF2ADEAEE4D3 /* DiarizationReprocessor.swift */,
 				4BAB738C3D6CD3024684BFAF /* FluidAudioModelStore.swift */,
 				6B0E6982AFBB133DBE973628 /* MeetingDiarizing.swift */,
 				0AA532BA80C7828E5709B9BD /* NeuralMeetingDiarizer.swift */,
@@ -682,6 +685,7 @@
 				B9813C397D1F2D27B50B4801 /* DashboardMemoryTab.swift in Sources */,
 				095753BC13A0C8EDADA26E93 /* DashboardPeopleTab.swift in Sources */,
 				E2F8F569B20DA0A2CC1C518A /* DashboardWindow.swift in Sources */,
+				2A3BC2D26D08828E278C4087 /* DiarizationReprocessor.swift in Sources */,
 				2D542DFDD639F5A0E8E7EE02 /* DocumentTextExtractor.swift in Sources */,
 				F811916A1F2CCE0B89E7B2EE /* FluidAudioModelStore.swift in Sources */,
 				D3A4AF242B3DD46E4FEF7AD8 /* GlassPanel.swift in Sources */,
@@ -779,7 +783,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = MZSC4FTLNA;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -799,7 +803,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.13;
+				MARKETING_VERSION = 0.1.14;
 				OTHER_CFLAGS = "$(inherited) -DHAVE_CONFIG_H -Wno-everything";
 				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.Sauron;
 				PRODUCT_NAME = Sauron;
@@ -819,7 +823,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = MZSC4FTLNA;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -839,7 +843,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.13;
+				MARKETING_VERSION = 0.1.14;
 				OTHER_CFLAGS = "$(inherited) -DHAVE_CONFIG_H -Wno-everything";
 				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.Sauron;
 				PRODUCT_NAME = Sauron;

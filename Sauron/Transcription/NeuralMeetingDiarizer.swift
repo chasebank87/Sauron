@@ -75,20 +75,33 @@ final class NeuralMeetingDiarizer: MeetingDiarizing, @unchecked Sendable {
         guard !mono.isEmpty else { return }
         let rate = pcm.format.sampleRate
         queue.async { [weak self] in
-            guard let self else { return }
-            self.lock.lock()
-            let active = self.started
-            let diarizer = self.sortformer
-            self.lock.unlock()
-            guard active, let diarizer else { return }
-            do {
-                _ = try diarizer.process(samples: mono, sourceSampleRate: rate)
-                self.lock.lock()
-                self.refreshTurnsLocked()
-                self.lock.unlock()
-            } catch {
-                // Drop this chunk; classic fallback is handled at router level when not ready.
-            }
+            self?.processChunk(mono, sourceSampleRate: rate)
+        }
+    }
+
+    /// Synchronous counterpart to `ingest(_:)` for feeding audio read from an already-saved
+    /// file (reprocessing an old meeting) instead of live ScreenCaptureKit buffers. The
+    /// caller controls read/feed ordering, so this blocks until the chunk is processed.
+    func ingestSamples(_ samples: [Float], sourceSampleRate: Double) {
+        guard !samples.isEmpty else { return }
+        queue.sync {
+            processChunk(samples, sourceSampleRate: sourceSampleRate)
+        }
+    }
+
+    private func processChunk(_ samples: [Float], sourceSampleRate: Double) {
+        lock.lock()
+        let active = started
+        let diarizer = sortformer
+        lock.unlock()
+        guard active, let diarizer else { return }
+        do {
+            _ = try diarizer.process(samples: samples, sourceSampleRate: sourceSampleRate)
+            lock.lock()
+            refreshTurnsLocked()
+            lock.unlock()
+        } catch {
+            // Drop this chunk; caller continues with the rest of the stream/file.
         }
     }
 

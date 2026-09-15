@@ -155,7 +155,7 @@ struct ReportDetailView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Label("This meeting's report never finished", systemImage: "exclamationmark.triangle")
                     .font(.callout.weight(.semibold))
-                Text("Processing was interrupted (e.g. the app quit or hit an error) after recording stopped. The raw recording is safe -- reprocess to regenerate the mixed audio, combined video, and summary.")
+                Text("Processing was interrupted (e.g. the app quit or hit an error) after recording stopped. The raw recording is safe -- reprocess to re-run transcript enhancement, the mixed audio, combined video, and summary.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Button("Reprocess") {

@@ -365,12 +365,13 @@ final class AppState {
         }
     }
 
-    /// Re-runs mixing/composing/summarizing for a meeting whose post-recording
-    /// pipeline got interrupted or hung partway (app quit mid-processing, or a bug
-    /// like transcribing an empty audio file) -- for use from a stuck report, not
-    /// during an active recording. Reuses the transcript already saved from the
-    /// original session rather than re-running on-device enhancement, since that
-    /// step needs live diarization-turn state that no longer exists after the fact.
+    /// Re-runs enhancement/mixing/composing/summarizing for a meeting whose post-recording
+    /// pipeline got interrupted or hung partway (app quit mid-processing, or a bug like
+    /// transcribing an empty audio file), or whose original transcript/media just needs a
+    /// do-over -- for use from a stuck report, not during an active recording. Diarization
+    /// turns are rebuilt from the saved system-audio file (the live session that produced
+    /// them no longer exists), then ASR re-runs against the saved mic/system audio same as
+    /// during live capture.
     func reprocessMeeting(_ meeting: Meeting) {
         guard status != .recording, status != .processing else { return }
         Task { await reprocess(meeting) }
@@ -393,6 +394,40 @@ final class AppState {
         let micURL = meeting.micAudioPath.map { URL(fileURLWithPath: $0) }
         let systemURL = meeting.systemAudioPath.map { URL(fileURLWithPath: $0) }
         let rawVideoURL = meeting.videoPath.map { URL(fileURLWithPath: $0) }
+
+        if meeting.recordTranscript,
+           settings.enhanceTranscriptEnabled,
+           let asrModels = fluidModels.currentAsrModels() {
+            postMeetingPhase = .enhancingTranscript
+            var turns: [DiarizationTimelineMapper.Turn] = []
+            if let systemURL, fluidModels.diarizationStatus.isReady {
+                turns = await DiarizationReprocessor.turns(
+                    fromSystemAudio: systemURL,
+                    diarizer: fluidModels.neuralDiarizer
+                )
+            }
+            let existing = meeting.segments.map { segment in
+                LiveSegment(
+                    id: segment.id,
+                    speakerKey: segment.speakerKey,
+                    text: segment.text,
+                    start: segment.start,
+                    end: segment.end,
+                    isFinal: segment.isFinal
+                )
+            }
+            if let upgraded = await ParakeetRetranscriber.enhance(
+                micURL: micURL,
+                systemURL: systemURL,
+                turns: turns,
+                existing: existing,
+                models: asrModels
+            ) {
+                MeetingStore.persist(liveSegments: upgraded, into: meeting, context: modelContext)
+                mediaReadyToken = UUID()
+                try? modelContext.save()
+            }
+        }
 
         var mixedURL: URL?
         if meeting.recordAudio || meeting.recordTranscript || meeting.recordVisual {
