@@ -124,6 +124,17 @@ enum ParakeetRetranscriber {
         )
     }
 
+    /// A capture stream with no audio (e.g. a meeting with no separately-capturable
+    /// system audio) leaves a zero-byte file rather than no file at all -- guard on
+    /// size, not just existence, since feeding an empty file into the on-device ASR
+    /// pipeline hangs rather than failing fast.
+    private static func isNonEmptyAudioFile(_ url: URL) -> Bool {
+        guard let size = try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int,
+              size > 0
+        else { return false }
+        return true
+    }
+
     /// Enhance after capture using saved mic/system files + live diarization turns.
     static func enhance(
         micURL: URL?,
@@ -137,7 +148,7 @@ enum ParakeetRetranscriber {
         var micConfidence: Float = 1
         var remoteConfidence: Float = 1
 
-        if let micURL, FileManager.default.fileExists(atPath: micURL.path) {
+        if let micURL, isNonEmptyAudioFile(micURL) {
             do {
                 let lane = try await transcribeFile(
                     url: micURL,
@@ -151,7 +162,7 @@ enum ParakeetRetranscriber {
             }
         }
 
-        if let systemURL, FileManager.default.fileExists(atPath: systemURL.path) {
+        if let systemURL, isNonEmptyAudioFile(systemURL) {
             do {
                 let lane = try await transcribeFile(
                     url: systemURL,

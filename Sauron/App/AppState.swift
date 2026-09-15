@@ -365,6 +365,75 @@ final class AppState {
         }
     }
 
+    /// Re-runs mixing/composing/summarizing for a meeting whose post-recording
+    /// pipeline got interrupted or hung partway (app quit mid-processing, or a bug
+    /// like transcribing an empty audio file) -- for use from a stuck report, not
+    /// during an active recording. Reuses the transcript already saved from the
+    /// original session rather than re-running on-device enhancement, since that
+    /// step needs live diarization-turn state that no longer exists after the fact.
+    func reprocessMeeting(_ meeting: Meeting) {
+        guard status != .recording, status != .processing else { return }
+        Task { await reprocess(meeting) }
+    }
+
+    private func reprocess(_ meeting: Meeting) async {
+        status = .processing
+        isSummarizing = true
+        defer {
+            postMeetingPhase = .idle
+            isSummarizing = false
+            status = settings.watchForMeetings ? .detecting : .idle
+        }
+
+        meeting.status = .processing
+        try? modelContext.save()
+        openReport(meeting)
+
+        let folder = MediaStore.folder(for: meeting.id)
+        let micURL = meeting.micAudioPath.map { URL(fileURLWithPath: $0) }
+        let systemURL = meeting.systemAudioPath.map { URL(fileURLWithPath: $0) }
+        let rawVideoURL = meeting.videoPath.map { URL(fileURLWithPath: $0) }
+
+        var mixedURL: URL?
+        if meeting.recordAudio || meeting.recordTranscript || meeting.recordVisual {
+            postMeetingPhase = .mixingAudio
+            do {
+                mixedURL = try await MediaCompose.mixAudio(
+                    micURL: micURL,
+                    systemURL: systemURL,
+                    outputURL: MediaCompose.mixedAudioURL(in: folder)
+                )
+                if let mixedURL {
+                    meeting.mixedAudioPath = mixedURL.path
+                    mediaReadyToken = UUID()
+                    try? modelContext.save()
+                }
+            } catch {
+                lastError = "Mixed audio unavailable: \(error.localizedDescription)"
+            }
+        }
+
+        if meeting.recordVisual, let rawVideoURL {
+            postMeetingPhase = .composingVideo
+            do {
+                if let composed = try await MediaCompose.muxVideo(
+                    videoURL: rawVideoURL,
+                    audioURL: mixedURL ?? micURL ?? systemURL,
+                    outputURL: MediaCompose.composedVideoURL(in: folder)
+                ) {
+                    meeting.videoPath = composed.path
+                    mediaReadyToken = UUID()
+                    try? modelContext.save()
+                }
+            } catch {
+                lastError = "Combined video unavailable: \(error.localizedDescription)"
+            }
+        }
+
+        postMeetingPhase = .summarizing
+        await summarize(meeting)
+    }
+
     func assignSpeaker(
         from sourceKey: String,
         to profile: SpeakerProfile,

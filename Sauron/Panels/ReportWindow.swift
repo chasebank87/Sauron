@@ -60,6 +60,9 @@ struct ReportDetailView: View {
                     || meeting.status == .processing {
                     streamingCard
                 }
+                if isStuckProcessing {
+                    stuckProcessingCard
+                }
                 if let summary = meeting.summary {
                     summarySections(summary)
                     updateSummaryButton
@@ -135,6 +138,32 @@ struct ReportDetailView: View {
         }
         .observerGlassButton()
         .disabled(appState.isSummarizing || meeting.namedTranscript.isEmpty)
+    }
+
+    /// True for a meeting left at `.processing` from a previous session (app quit
+    /// or crashed mid-pipeline, or hit a bug) with nothing currently working on it
+    /// -- as opposed to one actively processing right now, which already shows
+    /// `streamingCard`.
+    private var isStuckProcessing: Bool {
+        meeting.status == .processing
+            && appState.postMeetingPhase == .idle
+            && !appState.isSummarizing
+    }
+
+    private var stuckProcessingCard: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: 10) {
+                Label("This meeting's report never finished", systemImage: "exclamationmark.triangle")
+                    .font(.callout.weight(.semibold))
+                Text("Processing was interrupted (e.g. the app quit or hit an error) after recording stopped. The raw recording is safe -- reprocess to regenerate the mixed audio, combined video, and summary.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button("Reprocess") {
+                    appState.reprocessMeeting(meeting)
+                }
+                .observerGlassButton()
+            }
+        }
     }
 
     private var header: some View {
