@@ -95,6 +95,7 @@ final class AppState {
         promptTranscript = store.defaultTranscript
         promptMeetingAppAudio = store.meetingAppAudioOnly
         SpeakerProfileStore.shared.attach(context: modelContainer.mainContext)
+        MediaStore.repairMediaLinks(context: modelContainer.mainContext)
         fluidModels.attach(router: diarizer)
         diarizer.setPreferNeural(store.neuralDiarizationEnabled)
         if store.neuralDiarizationEnabled || store.enhanceTranscriptEnabled {

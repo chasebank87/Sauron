@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 enum MediaStore {
     private static let lock = NSLock()
@@ -55,6 +56,54 @@ enum MediaStore {
         } else {
             customMeetingsRoot = URL(fileURLWithPath: trimmed, isDirectory: true)
         }
+    }
+
+    /// Re-links a meeting's media paths to raw capture files that exist on disk under its
+    /// conventional filenames (video.mp4/mic.m4a/system.m4a) but aren't referenced by the
+    /// model -- covers a finished recording whose paths never made it into the saved
+    /// meeting (e.g. capture succeeded but the model write after it didn't land). Only
+    /// fills in paths that are currently empty; never overwrites an existing path.
+    @MainActor
+    @discardableResult
+    static func repairMediaLinks(context: ModelContext) -> Int {
+        var repaired = 0
+        for meeting in MeetingStore.all(context: context) {
+            let folder = folder(for: meeting.id)
+            var changed = false
+            if (meeting.videoPath ?? "").isEmpty {
+                let url = folder.appending(path: "video.mp4")
+                if isNonEmptyFile(url) {
+                    meeting.videoPath = url.path
+                    changed = true
+                }
+            }
+            if (meeting.micAudioPath ?? "").isEmpty {
+                let url = folder.appending(path: "mic.m4a")
+                if isNonEmptyFile(url) {
+                    meeting.micAudioPath = url.path
+                    changed = true
+                }
+            }
+            if (meeting.systemAudioPath ?? "").isEmpty {
+                let url = folder.appending(path: "system.m4a")
+                if isNonEmptyFile(url) {
+                    meeting.systemAudioPath = url.path
+                    changed = true
+                }
+            }
+            if changed { repaired += 1 }
+        }
+        if repaired > 0 {
+            try? context.save()
+        }
+        return repaired
+    }
+
+    private static func isNonEmptyFile(_ url: URL) -> Bool {
+        guard let size = try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int else {
+            return false
+        }
+        return size > 0
     }
 
     /// One-time move of Application Support/Observer → Sauron when Sauron is empty.
