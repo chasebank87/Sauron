@@ -101,6 +101,14 @@ struct RecordPromptView: View {
                 .padding(.top, 10)
             }
 
+            if appState.settings.echoCancellationEnabled {
+                Text("Set Zoom/Teams speaker to \(VirtualAudioDevice.displayName) so echo reject can hear the far end.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 12)
+            }
+
             Divider()
                 .overlay(SauronTheme.hairline(for: colorScheme))
                 .padding(.top, 18)
@@ -346,6 +354,12 @@ struct TranscriptPanelView: View {
                         Task { await appState.selectMicrophone(device) }
                     }
                 )
+
+                if appState.settings.echoCancellationEnabled {
+                    Text("Meeting speaker → \(VirtualAudioDevice.displayName)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
 
                 if appState.audioMonitor.micSilent || appState.audioMonitor.remoteSilent {
                     VStack(alignment: .leading, spacing: 6) {

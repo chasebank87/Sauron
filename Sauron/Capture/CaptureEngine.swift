@@ -21,12 +21,16 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
     private var videoStream: SCStream?
     private var audioStream: SCStream?
     private var systemTap: SystemAudioTap?
+    private var virtualCapture: VirtualDeviceCapture?
+    private var hardwarePlayer: HardwareAudioPlayer?
     private var writer: MediaWriter?
     private var includeVideo = false
     private var includeAudio = false
     private var usesCoreAudioSystemTap = false
+    private var usesVirtualFarEnd = false
     private var audioSource: CaptureAudioSource = .system
     private var microphoneDeviceID: String?
+    private var playbackOutputUID: String?
     private var echoCanceller: AcousticEchoCanceller?
     private var isStopping = false
     private var micMuted = false
@@ -36,9 +40,14 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
     var systemPath: String? { writer?.systemURL?.path }
     var activeMicrophoneDeviceID: String? { microphoneDeviceID }
 
-    /// Recorder AEC path: Speex with system/meeting capture as far-end reference.
-    /// VoiceProcessingIO is not used — Sauron does not play remote audio through a duplex unit.
+    /// Recorder AEC path: Speex with a far-end reference (virtual cable preferred).
+    /// VoiceProcessingIO is not used — it ducks other apps when Sauron is only a recorder.
     static func usesSoftwareEchoCancellation(_ enabled: Bool) -> Bool { enabled }
+
+    /// Prefer Sauron Audio virtual loopback as Speex far-end + hardware replay when the driver is loaded.
+    static func usesVirtualFarEnd(echoEnabled: Bool, driverLoaded: Bool) -> Bool {
+        echoEnabled && driverLoaded
+    }
 
     func start(
         candidate: MeetingCandidate,
@@ -46,22 +55,27 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         audioSource: CaptureAudioSource,
         videoTarget: CaptureVideoTarget = .auto,
         microphoneDeviceID: String?,
+        playbackOutputUID: String? = nil,
         echoCancellation: Bool,
         folder: URL
     ) async throws {
         includeVideo = modes.contains(.visual)
         includeAudio = modes.contains(.audio) || modes.contains(.transcript)
-        // FaceTime remote audio isn't visible to ScreenCaptureKit — always use a process tap.
-        usesCoreAudioSystemTap = includeAudio && candidate.kind.needsCoreAudioSystemTap
+        usesVirtualFarEnd = includeAudio && Self.usesVirtualFarEnd(
+            echoEnabled: echoCancellation,
+            driverLoaded: VirtualAudioDevice.isLoaded()
+        )
+        // FaceTime remote audio isn't visible to ScreenCaptureKit — process tap unless virtual far-end owns it.
+        usesCoreAudioSystemTap = includeAudio && candidate.kind.needsCoreAudioSystemTap && !usesVirtualFarEnd
         self.audioSource = usesCoreAudioSystemTap ? .system : audioSource
         self.microphoneDeviceID = microphoneDeviceID
+        self.playbackOutputUID = playbackOutputUID
         echoCanceller = nil
         isStopping = false
         writer = MediaWriter(folder: folder, includeVideo: includeVideo, includeAudio: includeAudio)
 
         if includeAudio, Self.usesSoftwareEchoCancellation(echoCancellation) {
-            // Far-end = captured system/meeting playback (ingestFarEnd). Near-end = SCK mic.
-            // Do not start VoiceProcessingIO: it ducks other apps and has no playback reference.
+            // Far-end = Sauron Audio (preferred) or SCK/tap fallback. Near-end = SCK mic.
             echoCanceller = AcousticEchoCanceller()
         }
 
@@ -74,7 +88,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
 
         let videoFilter = try makeVideoFilter(candidate: candidate, content: content, target: videoTarget)
         let captureSCKMic = includeAudio
-        let captureSystemViaSCK = includeAudio && !usesCoreAudioSystemTap
+        let captureSystemViaSCK = includeAudio && !usesCoreAudioSystemTap && !usesVirtualFarEnd
 
         if captureSCKMic || captureSystemViaSCK {
             try await startAudioStream(
@@ -85,7 +99,9 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
             )
         }
 
-        if includeAudio, usesCoreAudioSystemTap {
+        if includeAudio, usesVirtualFarEnd {
+            try startVirtualFarEndPath()
+        } else if includeAudio, usesCoreAudioSystemTap {
             let tap = SystemAudioTap()
             tap.onBuffer = { [weak self] sampleBuffer in
                 guard let self, self.includeAudio else { return }
@@ -132,6 +148,29 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         }
     }
 
+    private func startVirtualFarEndPath() throws {
+        let player = HardwareAudioPlayer()
+        try player.start(outputUID: playbackOutputUID)
+        hardwarePlayer = player
+
+        let capture = VirtualDeviceCapture()
+        capture.onBuffer = { [weak self] sampleBuffer in
+            guard let self, self.includeAudio else { return }
+            self.echoCanceller?.ingestFarEnd(sampleBuffer)
+            self.writer?.appendSystem(sampleBuffer)
+            self.onSystemAudio?(sampleBuffer)
+            self.hardwarePlayer?.schedule(sampleBuffer)
+        }
+        do {
+            try capture.start()
+            virtualCapture = capture
+        } catch {
+            player.stop()
+            hardwarePlayer = nil
+            throw error
+        }
+    }
+
     private func startVideoStream(
         filter: SCContentFilter,
         configuration: SCStreamConfiguration
@@ -150,7 +189,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         guard let audioStream else { return }
         let configuration = makeAudioConfiguration(
             microphoneDeviceID: deviceID,
-            captureSystemViaSCK: !usesCoreAudioSystemTap,
+            captureSystemViaSCK: !usesCoreAudioSystemTap && !usesVirtualFarEnd,
             captureMicrophone: true
         )
         try await audioStream.updateConfiguration(configuration)
@@ -172,11 +211,18 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         let video = videoStream
         let audio = audioStream
         let tap = systemTap
+        let virtual = virtualCapture
+        let player = hardwarePlayer
         videoStream = nil
         audioStream = nil
         systemTap = nil
+        virtualCapture = nil
+        hardwarePlayer = nil
         echoCanceller = nil
+        usesVirtualFarEnd = false
         tap?.stop()
+        virtual?.stop()
+        player?.stop()
         if let video {
             try? await video.stopCapture()
         }
@@ -194,7 +240,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
             guard includeVideo, isCompleteFrame(sampleBuffer) else { return }
             writer?.appendVideo(sampleBuffer)
         case .audio:
-            guard includeAudio, !usesCoreAudioSystemTap else { return }
+            guard includeAudio, !usesCoreAudioSystemTap, !usesVirtualFarEnd else { return }
             echoCanceller?.ingestFarEnd(sampleBuffer)
             writer?.appendSystem(sampleBuffer)
             onSystemAudio?(sampleBuffer)

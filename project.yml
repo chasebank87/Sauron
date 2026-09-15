@@ -30,12 +30,16 @@ targets:
           - Capture/AEC/speex/include
           - Capture/AEC/speex/lib/*.h
           - Capture/AEC/*.h
+          - Resources/Drivers
+      - path: Sauron/Resources/Drivers
+        type: folder
+        buildPhase: resources
     settings:
       base:
         PRODUCT_NAME: Sauron
         PRODUCT_BUNDLE_IDENTIFIER: app.sauron.Sauron
-        MARKETING_VERSION: 0.1.9
-        CURRENT_PROJECT_VERSION: 10
+        MARKETING_VERSION: 0.1.10
+        CURRENT_PROJECT_VERSION: 11
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_FILE: Sauron/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: Sauron

@@ -1342,6 +1342,25 @@ final class EchoCancellationSettingsTests: XCTestCase {
         XCTAssertTrue(CaptureEngine.usesSoftwareEchoCancellation(true))
         XCTAssertFalse(CaptureEngine.usesSoftwareEchoCancellation(false))
     }
+
+    func testVirtualFarEndRequiresEchoAndLoadedDriver() {
+        XCTAssertTrue(CaptureEngine.usesVirtualFarEnd(echoEnabled: true, driverLoaded: true))
+        XCTAssertFalse(CaptureEngine.usesVirtualFarEnd(echoEnabled: true, driverLoaded: false))
+        XCTAssertFalse(CaptureEngine.usesVirtualFarEnd(echoEnabled: false, driverLoaded: true))
+        XCTAssertFalse(CaptureEngine.usesVirtualFarEnd(echoEnabled: false, driverLoaded: false))
+    }
+
+    func testVirtualAudioDeviceConstants() {
+        XCTAssertEqual(VirtualAudioDevice.displayName, "Sauron Audio")
+        XCTAssertEqual(VirtualAudioDevice.deviceUID, "app.sauron.audio.SauronAudio")
+        XCTAssertTrue(VirtualAudioDevice.installedBundlePath.contains("SauronAudio.driver"))
+    }
+
+    func testOutputCatalogExcludesEmptyAndIncludesSystemDefault() {
+        let outputs = AudioDeviceCatalog.resolvedOutputs(selectedID: nil)
+        XCTAssertEqual(outputs.first?.id, AudioOutputDevice.systemDefaultID)
+        XCTAssertFalse(outputs.contains(where: { $0.id == VirtualAudioDevice.deviceUID }))
+    }
 }
 
 final class AudioDeviceCatalogCoreAudioTests: XCTestCase {

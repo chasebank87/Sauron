@@ -5,10 +5,10 @@ import Foundation
 
 /// SpeexDSP MDF acoustic echo canceller for meeting recording.
 ///
-/// Far-end reference is captured system / meeting-app audio (SCK or process tap).
-/// Near-end is the microphone. VoiceProcessingIO is not used here — Sauron does not
-/// render remote audio through a duplex unit, so Apple’s canceller has no playback
-/// reference and would only duck other apps.
+/// Far-end reference is preferably the Sauron Audio virtual loopback (meeting-app
+/// output hijack); otherwise ScreenCaptureKit / process-tap capture.
+/// Near-end is the microphone. VoiceProcessingIO is not used here — without owning
+/// playback as a duplex unit, Apple’s canceller has no reference and would only duck other apps.
 final class AcousticEchoCanceller: @unchecked Sendable {
     static let processSampleRate = 16_000
     static let frameSize = 160

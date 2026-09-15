@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+	<key>AudioServerPlugIn_MachServices</key>
+	<array>
+	</array>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>SauronAudio</string>
+	<key>CFBundleIdentifier</key>
+	<string>app.sauron.audio.driver</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>SauronAudio</string>
+	<key>CFBundlePackageType</key>
+	<string>BNDL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleSupportedPlatforms</key>
+	<array>
+		<string>MacOSX</string>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>1.0.0</string>
+	<key>CFPlugInFactories</key>
+	<dict>
+		<key>A8E4C2F1-9B3D-4E7A-8C1F-2D6B5A0E9F34</key>
+		<string>SauronAudioEntryPoint</string>
+	</dict>
+	<key>CFPlugInTypes</key>
+	<dict>
+		<key>443ABAB8-E7B3-491A-B985-BEB9187030DB</key>
+		<array>
+			<string>A8E4C2F1-9B3D-4E7A-8C1F-2D6B5A0E9F34</string>
+		</array>
+	</dict>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright (c) Sauron</string>
+	<key>NSPrincipalClass</key>
+	<string></string>
+	<key>sandboxSafe</key>
+	<true/>
+  </dict>
+</plist>

@@ -50,15 +50,27 @@ final class SettingsStore {
         didSet { defaults.set(meetingAppAudioOnly, forKey: Keys.meetingAppAudio) }
     }
 
-    /// When true, Speex subtracts captured system/meeting playback from the mic
-    /// (“You”) track. Default on. Headphones remain the most reliable fallback.
+    /// When true, Speex subtracts far-end (Sauron Audio virtual cable when installed,
+    /// otherwise system/meeting capture) from the mic (“You”) track.
     var echoCancellationEnabled: Bool {
         didSet { defaults.set(echoCancellationEnabled, forKey: Keys.echoCancellation) }
+    }
+
+    /// Hardware output UID for replaying Sauron Audio, or system-default sentinel / empty.
+    var playbackOutputDeviceID: String {
+        didSet { defaults.set(playbackOutputDeviceID, forKey: Keys.playbackOutput) }
     }
 
     /// Ordered mic device IDs after System Default. System Default is always applied as #1 at resolve time.
     var micPriorityIDs: [String] {
         didSet { defaults.set(micPriorityIDs, forKey: Keys.micPriority) }
+    }
+
+    /// Concrete Core Audio UID for hardware replay, or nil for system default.
+    var playbackOutputUID: String? {
+        let id = playbackOutputDeviceID
+        if id.isEmpty || id == AudioOutputDevice.systemDefaultID { return nil }
+        return id
     }
 
     var defaultAudioSource: CaptureAudioSource {
@@ -364,6 +376,7 @@ final class SettingsStore {
         defaultTranscript = defaults.object(forKey: Keys.transcript) as? Bool ?? true
         meetingAppAudioOnly = defaults.bool(forKey: Keys.meetingAppAudio)
         echoCancellationEnabled = defaults.object(forKey: Keys.echoCancellation) as? Bool ?? true
+        playbackOutputDeviceID = defaults.string(forKey: Keys.playbackOutput) ?? AudioOutputDevice.systemDefaultID
         micPriorityIDs = defaults.stringArray(forKey: Keys.micPriority) ?? []
         let providerRaw = defaults.string(forKey: Keys.provider) ?? LLMProviderKind.ollama.rawValue
         providerKind = LLMProviderKind(rawValue: providerRaw) ?? .ollama
@@ -423,6 +436,7 @@ final class SettingsStore {
         static let transcript = "recordTranscript"
         static let meetingAppAudio = "meetingAppAudioOnly"
         static let echoCancellation = "echoCancellationEnabled"
+        static let playbackOutput = "playbackOutputDeviceID"
         static let micPriority = "micPriorityIDs"
         static let provider = "llmProvider"
         static let ollamaURL = "ollamaURL"

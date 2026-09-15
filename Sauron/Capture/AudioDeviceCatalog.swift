@@ -26,6 +26,23 @@ struct AudioInputDevice: Identifiable, Equatable, Hashable, Sendable {
     }
 }
 
+struct AudioOutputDevice: Identifiable, Equatable, Hashable, Sendable {
+    static let systemDefaultID = "__system_default_output__"
+
+    var id: String
+    var name: String
+    var isSystemDefault: Bool
+
+    static var systemDefault: AudioOutputDevice {
+        AudioOutputDevice(id: systemDefaultID, name: "System Default", isSystemDefault: true)
+    }
+
+    /// Concrete Core Audio UID, or nil for system default.
+    var coreAudioUID: String? {
+        isSystemDefault ? nil : id
+    }
+}
+
 enum AudioDeviceCatalog {
     static func physicalInputs() -> [AudioInputDevice] {
         let session = AVCaptureDevice.DiscoverySession(
@@ -107,6 +124,72 @@ enum AudioDeviceCatalog {
         }
         guard status == noErr else { return nil }
         return uid as String?
+    }
+
+    static func coreAudioName(for deviceID: AudioDeviceID) -> String? {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioObjectPropertyName,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var name: CFString?
+        var size = UInt32(MemoryLayout<CFString?>.size)
+        let status = withUnsafeMutablePointer(to: &name) { pointer in
+            AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, pointer)
+        }
+        guard status == noErr else { return nil }
+        return name as String?
+    }
+
+    /// Hardware (and third-party) outputs suitable for meeting replay. Excludes Sauron Audio itself.
+    static func physicalOutputs() -> [AudioOutputDevice] {
+        allAudioDeviceIDs().compactMap { deviceID -> AudioOutputDevice? in
+            guard channelCount(deviceID, scope: kAudioDevicePropertyScopeOutput) > 0 else { return nil }
+            guard let uid = coreAudioUID(for: deviceID), uid != VirtualAudioDevice.deviceUID else { return nil }
+            let name = coreAudioName(for: deviceID) ?? uid
+            return AudioOutputDevice(id: uid, name: name, isSystemDefault: false)
+        }
+        .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    static func resolvedOutputs(selectedID: String?) -> [AudioOutputDevice] {
+        let physical = physicalOutputs()
+        var result: [AudioOutputDevice] = [.systemDefault]
+        var seen: Set<String> = [AudioOutputDevice.systemDefaultID]
+        if let selectedID,
+           selectedID != AudioOutputDevice.systemDefaultID,
+           let match = physical.first(where: { $0.id == selectedID })
+        {
+            result.append(match)
+            seen.insert(match.id)
+        }
+        for device in physical where !seen.contains(device.id) {
+            result.append(device)
+        }
+        return result
+    }
+
+    private static func channelCount(_ deviceID: AudioDeviceID, scope: AudioObjectPropertyScope) -> Int {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyStreamConfiguration,
+            mScope: scope,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var dataSize: UInt32 = 0
+        guard AudioObjectGetPropertyDataSize(deviceID, &address, 0, nil, &dataSize) == noErr,
+              dataSize > 0
+        else { return 0 }
+        let raw = UnsafeMutableRawPointer.allocate(
+            byteCount: Int(dataSize),
+            alignment: MemoryLayout<AudioBufferList>.alignment
+        )
+        defer { raw.deallocate() }
+        guard AudioObjectGetPropertyData(deviceID, &address, 0, nil, &dataSize, raw) == noErr else {
+            return 0
+        }
+        let list = raw.assumingMemoryBound(to: AudioBufferList.self)
+        let buffers = UnsafeMutableAudioBufferListPointer(list)
+        return buffers.reduce(0) { $0 + Int($1.mNumberChannels) }
     }
 
     private static func allAudioDeviceIDs() -> [AudioDeviceID] {
