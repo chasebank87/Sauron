@@ -70,10 +70,11 @@ final class HardwareAudioPlayer: @unchecked Sendable {
     }
 
     private func convertIfNeeded(_ source: AVAudioPCMBuffer, to target: AVAudioFormat) -> AVAudioPCMBuffer? {
-        if source.format.sampleRate == target.sampleRate,
-           source.format.channelCount == target.channelCount,
-           source.format.commonFormat == target.commonFormat
-        {
+        // Must match exactly, interleaving included — AVAudioPlayerNode's connected bus
+        // format is always non-interleaved, while the Sauron Audio driver (libASPL) hands
+        // us interleaved Float32. A commonFormat-only check misses that and feeds
+        // scheduleBuffer a buffer laid out wrong for the render graph, corrupting it.
+        if source.format == target {
             return source
         }
         if converter == nil || converter?.inputFormat != source.format {

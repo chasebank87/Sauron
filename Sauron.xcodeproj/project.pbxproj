@@ -779,7 +779,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = MZSC4FTLNA;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -799,7 +799,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.10;
+				MARKETING_VERSION = 0.1.11;
 				OTHER_CFLAGS = "$(inherited) -DHAVE_CONFIG_H -Wno-everything";
 				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.Sauron;
 				PRODUCT_NAME = Sauron;
@@ -819,7 +819,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				DEVELOPMENT_TEAM = MZSC4FTLNA;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -839,7 +839,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.10;
+				MARKETING_VERSION = 0.1.11;
 				OTHER_CFLAGS = "$(inherited) -DHAVE_CONFIG_H -Wno-everything";
 				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.Sauron;
 				PRODUCT_NAME = Sauron;
