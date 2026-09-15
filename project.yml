@@ -38,8 +38,8 @@ targets:
       base:
         PRODUCT_NAME: Sauron
         PRODUCT_BUNDLE_IDENTIFIER: app.sauron.Sauron
-        MARKETING_VERSION: 0.1.11
-        CURRENT_PROJECT_VERSION: 12
+        MARKETING_VERSION: 0.1.12
+        CURRENT_PROJECT_VERSION: 13
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_FILE: Sauron/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: Sauron

@@ -44,16 +44,20 @@ struct AudioOutputDevice: Identifiable, Equatable, Hashable, Sendable {
 }
 
 enum AudioDeviceCatalog {
+    /// Excludes Sauron Audio itself — selecting it as the recording mic would feed the
+    /// far-end reference back in as "near end," so Speex has nothing left to cancel.
     static func physicalInputs() -> [AudioInputDevice] {
         let session = AVCaptureDevice.DiscoverySession(
             deviceTypes: [.microphone, .external],
             mediaType: .audio,
             position: .unspecified
         )
-        return session.devices.map { device in
-            AudioInputDevice(id: device.uniqueID, name: device.localizedName, isSystemDefault: false)
-        }
-        .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        return session.devices
+            .filter { $0.uniqueID != VirtualAudioDevice.deviceUID }
+            .map { device in
+                AudioInputDevice(id: device.uniqueID, name: device.localizedName, isSystemDefault: false)
+            }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     /// Priority list for UI and capture: System Default first, then saved order, then any new devices.

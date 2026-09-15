@@ -17,6 +17,7 @@ xcuserdata/
 *.swp
 .env
 .env.*
+.doppler.yaml
 Observer.xcodeproj/xcuserdata/
 Observer.xcodeproj/project.xcworkspace/xcuserdata/
 Sauron.xcodeproj/xcuserdata/

@@ -20,6 +20,10 @@ Release packaging runs the same script with your `CODE_SIGN_IDENTITY` when set t
 and restarts `coreaudiod`.
 
 3. In Zoom / Teams / Meet / FaceTime, set **Speaker** to **Sauron Audio** (not your built-in speakers).
+   Leave that app's **Microphone** on your real hardware mic — never Sauron Audio. Sauron Audio
+   is a loopback: its "input" side only plays back whatever was just written to its "output"
+   side. Route a mic there and you feed the meeting's own audio back in as "near end," so Speex
+   has nothing left to cancel and you'll hear/transcribe the meeting's own words as if you said them.
 
 4. In Sauron, pick **Play meeting through** (hardware speakers or headphones).
 

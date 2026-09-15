@@ -141,7 +141,13 @@ final class VirtualDeviceCapture: @unchecked Sendable {
         ) == noErr else { return }
         guard CMSampleBufferSetDataBuffer(sampleBuffer, newValue: blockBuffer) == noErr else { return }
 
-        onBuffer?(sampleBuffer)
+        // sampleBuffer owns its bytes now (copied above) — safe to hand off. onBuffer chains into
+        // AEC ingest (NSLock shared with the mic thread's Speex processing), disk writes, and
+        // playback scheduling; running any of that on this real-time HAL IO thread risks a missed
+        // deadline (priority inversion on the lock) and an audible dropout.
+        self.queue.async { [weak self] in
+            self?.onBuffer?(sampleBuffer)
+        }
     }
 
     private static func inputFormat(for deviceID: AudioDeviceID) throws -> AudioStreamBasicDescription {
