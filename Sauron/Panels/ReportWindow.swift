@@ -231,7 +231,8 @@ struct ReportDetailView: View {
                         audioURL: meeting.playableMixedURL,
                         height: 280,
                         reloadToken: appState.mediaReadyToken,
-                        playback: playback
+                        playback: playback,
+                        allowsFullScreen: true
                     )
                 } else if let mixedURL = meeting.playableMixedURL {
                     MediaPlayerView(
@@ -996,6 +997,8 @@ private struct MediaPlayerView: NSViewRepresentable {
     /// Changes when capture/mix finishes so we reload a finalized file (same URL).
     var reloadToken: UUID = UUID()
     var playback: ReportPlaybackController? = nil
+    /// Shows AVKit's native fullscreen/theater toggle — only meaningful when `url` has video.
+    var allowsFullScreen: Bool = false
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -1005,6 +1008,7 @@ private struct MediaPlayerView: NSViewRepresentable {
         let view = AVPlayerView()
         view.controlsStyle = .inline
         view.videoGravity = .resizeAspect
+        view.showsFullScreenToggleButton = allowsFullScreen
         context.coordinator.load(
             url: url,
             audioURL: audioURL,
@@ -1071,47 +1075,58 @@ private struct MediaPlayerView: NSViewRepresentable {
         }
 
         private static func makePlayer(videoURL: URL, audioURL: URL?) async -> AVPlayer {
-            // When Observer supplies mixed audio (mic + system), always prefer it over
-            // whatever audio is already embedded in the video (often system-only).
+            // Once MediaCompose has muxed the recording, the video already carries the
+            // mixed audio as its own track — compositing again here would just rebuild
+            // the same thing and, worse, race MediaCompose's own composition teardown on
+            // the same shared CoreMedia queues (this has crashed with SIGSEGV). Only
+            // composite when the video is still the raw, video-only capture.
             if let audioURL {
-                do {
-                    let composition = AVMutableComposition()
-                    let videoAsset = AVURLAsset(url: videoURL)
-                    let audioAsset = AVURLAsset(url: audioURL)
-                    let videoTracks = try await videoAsset.loadTracks(withMediaType: .video)
-                    let audioTracks = try await audioAsset.loadTracks(withMediaType: .audio)
-                    let videoDuration = try await videoAsset.load(.duration)
-                    let audioDuration = try await audioAsset.load(.duration)
-
-                    if let sourceVideo = videoTracks.first,
-                       let compositionVideo = composition.addMutableTrack(
-                            withMediaType: .video,
-                            preferredTrackID: kCMPersistentTrackID_Invalid
-                       ) {
-                        try compositionVideo.insertTimeRange(
-                            CMTimeRange(start: .zero, duration: videoDuration),
-                            of: sourceVideo,
-                            at: .zero
-                        )
-                        compositionVideo.preferredTransform = try await sourceVideo.load(.preferredTransform)
+                let videoAsset = AVURLAsset(url: videoURL)
+                let hasOwnAudio = (try? await videoAsset.loadTracks(withMediaType: .audio).isEmpty) == false
+                if !hasOwnAudio {
+                    await MediaCompositionGate.shared.acquire()
+                    defer {
+                        let gate = MediaCompositionGate.shared
+                        Task { await gate.release() }
                     }
+                    do {
+                        let composition = AVMutableComposition()
+                        let audioAsset = AVURLAsset(url: audioURL)
+                        let videoTracks = try await videoAsset.loadTracks(withMediaType: .video)
+                        let audioTracks = try await audioAsset.loadTracks(withMediaType: .audio)
+                        let videoDuration = try await videoAsset.load(.duration)
+                        let audioDuration = try await audioAsset.load(.duration)
 
-                    if let sourceAudio = audioTracks.first,
-                       let compositionAudio = composition.addMutableTrack(
-                            withMediaType: .audio,
-                            preferredTrackID: kCMPersistentTrackID_Invalid
-                       ) {
-                        let insertDuration = CMTimeMinimum(audioDuration, videoDuration)
-                        try compositionAudio.insertTimeRange(
-                            CMTimeRange(start: .zero, duration: insertDuration),
-                            of: sourceAudio,
-                            at: .zero
-                        )
+                        if let sourceVideo = videoTracks.first,
+                           let compositionVideo = composition.addMutableTrack(
+                                withMediaType: .video,
+                                preferredTrackID: kCMPersistentTrackID_Invalid
+                           ) {
+                            try compositionVideo.insertTimeRange(
+                                CMTimeRange(start: .zero, duration: videoDuration),
+                                of: sourceVideo,
+                                at: .zero
+                            )
+                            compositionVideo.preferredTransform = try await sourceVideo.load(.preferredTransform)
+                        }
+
+                        if let sourceAudio = audioTracks.first,
+                           let compositionAudio = composition.addMutableTrack(
+                                withMediaType: .audio,
+                                preferredTrackID: kCMPersistentTrackID_Invalid
+                           ) {
+                            let insertDuration = CMTimeMinimum(audioDuration, videoDuration)
+                            try compositionAudio.insertTimeRange(
+                                CMTimeRange(start: .zero, duration: insertDuration),
+                                of: sourceAudio,
+                                at: .zero
+                            )
+                        }
+
+                        return AVPlayer(playerItem: AVPlayerItem(asset: composition))
+                    } catch {
+                        return AVPlayer(url: videoURL)
                     }
-
-                    return AVPlayer(playerItem: AVPlayerItem(asset: composition))
-                } catch {
-                    return AVPlayer(url: videoURL)
                 }
             }
 
