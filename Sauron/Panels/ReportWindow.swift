@@ -1027,6 +1027,9 @@ private struct MediaPlayerView: NSViewRepresentable {
             token: reloadToken,
             playback: playback
         )
+        if allowsFullScreen {
+            context.coordinator.enableWindowFullScreen(for: nsView)
+        }
     }
 
     static func dismantleNSView(_ nsView: AVPlayerView, coordinator: Coordinator) {
@@ -1044,7 +1047,21 @@ private struct MediaPlayerView: NSViewRepresentable {
         private var loadedVideo: URL?
         private var loadedAudio: URL?
         private var loadedToken: UUID?
+        private var didConfigureFullScreenWindow = false
         var playback: ReportPlaybackController?
+
+        /// AVPlayerView's fullscreen toggle silently no-ops unless the containing window
+        /// opts into `.fullScreenPrimary` — SwiftUI's `.windowStyle(.hiddenTitleBar)` doesn't
+        /// set that by default. The window isn't available until the view is installed in
+        /// the hierarchy, so this runs from `updateNSView` rather than `makeNSView`.
+        func enableWindowFullScreen(for view: AVPlayerView) {
+            guard !didConfigureFullScreenWindow, let window = view.window else { return }
+            didConfigureFullScreenWindow = true
+            window.collectionBehavior.insert(.fullScreenPrimary)
+            if !window.styleMask.contains(.resizable) {
+                window.styleMask.insert(.resizable)
+            }
+        }
 
         func load(
             url: URL,
