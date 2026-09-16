@@ -277,6 +277,13 @@ final class MeetingDetector {
             }
             return
         }
+        // Presenting hides most meeting apps' own window (Zoom/Teams/Meet tuck their main UI
+        // away while you share), so the catalog-matched window can vanish for the whole share —
+        // far longer than endGrace. Don't let a local screen share look like a hang-up.
+        if isUserScreenSharing {
+            recordingMissingSince = nil
+            return
+        }
         let started = recordingMissingSince ?? Date()
         recordingMissingSince = started
         if Date().timeIntervalSince(started) >= RecordedMeetingWatch.endGrace {
