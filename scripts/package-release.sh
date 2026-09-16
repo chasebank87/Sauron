@@ -15,14 +15,6 @@ mkdir -p "$OUT_DIR"
 rm -rf "$DERIVED"
 rm -f "${OUT_DIR}/${ZIP_NAME}"
 
-echo "==> Building SauronAudio.driver"
-export CODESIGN_ID="${CODE_SIGN_IDENTITY:-}"
-# Only pass a real identity into cmake; empty keeps ad-hoc for local.
-if [[ "${CODESIGN_ID}" == Apple\ Development* ]]; then
-  CODESIGN_ID=""
-fi
-./scripts/build-sauron-audio-driver.sh
-
 echo "==> Generating Xcode project"
 xcodegen generate
 

@@ -126,20 +126,9 @@ struct GeneralSettingsView: View {
                 Text("Off captures all Mac audio. On limits remote audio to the meeting app (Zoom, Teams, etc.).")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Toggle("Reject speaker echo", isOn: $settings.echoCancellationEnabled)
-                Text("Uses the Sauron Audio virtual speaker as an echo reference. Install it under Settings → Devices, then set Zoom/Teams speaker to “Sauron Audio”.")
+                Text("Sauron requires headphones. Recording without them risks the meeting's speaker audio leaking into your mic.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
-                if settings.echoCancellationEnabled {
-                    Picker("Play meeting through", selection: $settings.playbackOutputDeviceID) {
-                        ForEach(AudioDeviceCatalog.resolvedOutputs(selectedID: settings.playbackOutputDeviceID)) { device in
-                            Text(device.name).tag(device.id)
-                        }
-                    }
-                    Text("Hardware speakers/headphones for Sauron’s replay. Meeting apps must output to Sauron Audio, not this device.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                    .foregroundStyle(.orange)
             }
             Section("Storage") {
                 VStack(alignment: .leading, spacing: 8) {
@@ -300,26 +289,6 @@ struct DevicesSettingsView: View {
 
     var body: some View {
         Form {
-            Section("Sauron Audio") {
-                Text("Virtual speaker for echo reject. Meeting apps play into this device; Sauron captures it, plays it on your speakers, and subtracts it from the mic.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                SauronAudioDriverStatusRow(prominent: true)
-                if appState.settings.echoCancellationEnabled {
-                    Picker("Play meeting through", selection: Binding(
-                        get: { appState.settings.playbackOutputDeviceID },
-                        set: { appState.settings.playbackOutputDeviceID = $0 }
-                    )) {
-                        ForEach(AudioDeviceCatalog.resolvedOutputs(selectedID: appState.settings.playbackOutputDeviceID)) { device in
-                            Text(device.name).tag(device.id)
-                        }
-                    }
-                    Text("Real speakers/headphones for Sauron’s replay — not Sauron Audio.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
             Section("Microphone priority") {
                 Text("Sauron tries #1 first. If that mic stays silent during a recording, it automatically falls through to the next device.")
                     .font(.caption)
@@ -855,99 +824,3 @@ struct PeopleSettingsView: View {
     }
 }
 
-private struct SauronAudioDriverStatusRow: View {
-    var prominent: Bool = false
-    @State private var status = VirtualAudioDevice.status()
-    @State private var isWorking = false
-    @State private var message: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Device status")
-                Spacer()
-                Text(status.label)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(status == .loaded ? Color.secondary : Color.orange)
-            }
-
-            switch status {
-            case .missing:
-                Button(isWorking ? "Installing…" : "Install Sauron Audio…") {
-                    Task { await install() }
-                }
-                .disabled(isWorking)
-                .observerGlassProminentButton()
-            case .installedButNotLoaded:
-                Button(isWorking ? "Reloading…" : "Reload Core Audio…") {
-                    Task { await reload() }
-                }
-                .disabled(isWorking)
-                .observerGlassProminentButton()
-                Button("Reinstall Sauron Audio…") {
-                    Task { await install() }
-                }
-                .disabled(isWorking)
-                .observerGlassButton()
-            case .loaded:
-                Text("Ready. In Zoom/Teams/Meet, set Speaker to “Sauron Audio”.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Button("Reinstall Sauron Audio…") {
-                    Task { await install() }
-                }
-                .disabled(isWorking)
-                .observerGlassButton()
-            }
-
-            Button("Refresh status") {
-                status = VirtualAudioDevice.status()
-                message = nil
-            }
-            .disabled(isWorking)
-            .buttonStyle(.borderless)
-            .font(.caption)
-
-            if let message {
-                Text(message)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else if prominent, status == .missing {
-                Text("Requires an admin password. After install, Sauron Audio appears in meeting-app speaker lists.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .onAppear { status = VirtualAudioDevice.status() }
-    }
-
-    private func install() async {
-        isWorking = true
-        message = nil
-        defer { isWorking = false }
-        do {
-            try await SauronAudioDriverInstaller.install()
-            status = VirtualAudioDevice.status()
-            message = status == .loaded
-                ? "Installed. Set Zoom/Teams speaker to Sauron Audio."
-                : "Installed. If the device is missing, log out or restart once."
-        } catch {
-            message = error.localizedDescription
-            status = VirtualAudioDevice.status()
-        }
-    }
-
-    private func reload() async {
-        isWorking = true
-        message = nil
-        defer { isWorking = false }
-        do {
-            try await SauronAudioDriverInstaller.reloadCoreAudio()
-            status = VirtualAudioDevice.status()
-            message = status == .loaded ? "Core Audio reloaded." : "Still waiting for the device — try a reboot."
-        } catch {
-            message = error.localizedDescription
-            status = VirtualAudioDevice.status()
-        }
-    }
-}

@@ -16,11 +16,25 @@ private final class SauronPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 }
 
+/// `isMovableByWindowBackground` alone doesn't work here: it only fires when a mouseDown
+/// reaches the window's background view unhandled, but SwiftUI's own hit-testing routes a
+/// click to whichever internal SwiftUI-bridging subview geometrically contains the point --
+/// for empty/background areas that's this root hosting view itself, and its default
+/// `mouseDown` never forwards to the window. Forwarding it to `performDrag` here restores
+/// dragging for exactly those background clicks; clicks that land on a real button/control
+/// are hit-tested to a *different*, deeper subview and never reach this override at all, so
+/// interactive content underneath keeps working normally.
+private final class DraggableHostingView<Content: View>: NSHostingView<Content> {
+    override func mouseDown(with event: NSEvent) {
+        window?.performDrag(with: event)
+    }
+}
+
 @MainActor
 final class GlassPanelController {
     private var panel: NSPanel?
     private var glassView: NSGlassEffectView?
-    private var hostingView: NSHostingView<AnyView>?
+    private var hostingView: DraggableHostingView<AnyView>?
 
     func present<Content: View>(
         _ view: Content,
@@ -72,7 +86,7 @@ final class GlassPanelController {
         // Inherit System Settings appearance (light/dark) — do not force dark.
         panel.appearance = nil
 
-        let hosting = NSHostingView(rootView: hosted)
+        let hosting = DraggableHostingView(rootView: hosted)
         hosting.sizingOptions = [.intrinsicContentSize]
         hosting.wantsLayer = true
         hosting.layer?.backgroundColor = NSColor.clear.cgColor

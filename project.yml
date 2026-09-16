@@ -26,20 +26,12 @@ targets:
         excludes:
           - Info.plist
           - Sauron.entitlements
-          - Capture/AEC/speex/COPYING
-          - Capture/AEC/speex/include
-          - Capture/AEC/speex/lib/*.h
-          - Capture/AEC/*.h
-          - Resources/Drivers
-      - path: Sauron/Resources/Drivers
-        type: folder
-        buildPhase: resources
     settings:
       base:
         PRODUCT_NAME: Sauron
         PRODUCT_BUNDLE_IDENTIFIER: app.sauron.Sauron
-        MARKETING_VERSION: 0.1.16
-        CURRENT_PROJECT_VERSION: 17
+        MARKETING_VERSION: 0.1.17
+        CURRENT_PROJECT_VERSION: 18
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_FILE: Sauron/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: Sauron
@@ -58,12 +50,6 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         SWIFT_STRICT_CONCURRENCY: targeted
         SWIFT_EMIT_LOC_STRINGS: YES
-        SWIFT_OBJC_BRIDGING_HEADER: Sauron/Sauron-Bridging-Header.h
-        HEADER_SEARCH_PATHS:
-          - "$(SRCROOT)/Sauron/Capture/AEC"
-          - "$(SRCROOT)/Sauron/Capture/AEC/speex/include"
-          - "$(SRCROOT)/Sauron/Capture/AEC/speex/lib"
-        OTHER_CFLAGS: "$(inherited) -DHAVE_CONFIG_H -Wno-everything"
         LD_RUNPATH_SEARCH_PATHS:
           - "$(inherited)"
           - "@executable_path/../Frameworks"
@@ -92,10 +78,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: app.sauron.SauronTests
         GENERATE_INFOPLIST_FILE: YES
         MACOSX_DEPLOYMENT_TARGET: "26.0"
-        HEADER_SEARCH_PATHS:
-          - "$(SRCROOT)/Sauron/Capture/AEC"
-          - "$(SRCROOT)/Sauron/Capture/AEC/speex/include"
-          - "$(SRCROOT)/Sauron/Capture/AEC/speex/lib"
 schemes:
   Sauron:
     build:

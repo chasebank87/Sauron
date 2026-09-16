@@ -56,4 +56,4 @@ Sauron is a menu-bar (`LSUIElement`) app. Users must grant:
 - Speech Recognition
 - Calendar (optional, for Up Next)
 
-For speaker-echo reject without headphones, install the **Sauron Audio** virtual device from Settings and set the meeting app’s speaker to it. See [VIRTUAL_AUDIO.md](VIRTUAL_AUDIO.md).
+Sauron requires headphones during recording. Without them, the meeting's speaker audio leaks into your microphone.
