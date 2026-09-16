@@ -2,6 +2,7 @@ import AVFoundation
 import AVKit
 import AppKit
 import SwiftUI
+import os
 
 struct ReportWindow: View {
     @Environment(AppState.self) private var appState
@@ -1009,6 +1010,7 @@ private struct MediaPlayerView: NSViewRepresentable {
         view.controlsStyle = .inline
         view.videoGravity = .resizeAspect
         view.showsFullScreenToggleButton = allowsFullScreen
+        view.delegate = context.coordinator
         context.coordinator.load(
             url: url,
             audioURL: audioURL,
@@ -1043,7 +1045,9 @@ private struct MediaPlayerView: NSViewRepresentable {
     }
 
     @MainActor
-    final class Coordinator {
+    final class Coordinator: NSObject, AVPlayerViewDelegate {
+        nonisolated private static let log = Logger(subsystem: "app.sauron.Sauron", category: "MediaPlayerView")
+
         private var loadedVideo: URL?
         private var loadedAudio: URL?
         private var loadedToken: UUID?
@@ -1055,12 +1059,42 @@ private struct MediaPlayerView: NSViewRepresentable {
         /// set that by default. The window isn't available until the view is installed in
         /// the hierarchy, so this runs from `updateNSView` rather than `makeNSView`.
         func enableWindowFullScreen(for view: AVPlayerView) {
-            guard !didConfigureFullScreenWindow, let window = view.window else { return }
+            guard !didConfigureFullScreenWindow else { return }
+            guard let window = view.window else {
+                let id = ObjectIdentifier(view)
+                let appWindows = NSApp.windows.map { w in
+                    "'\(w.title)' visible=\(w.isVisible) key=\(w.isKeyWindow) level=\(w.level.rawValue)"
+                }.joined(separator: " | ")
+                Self.log.debug("enableWindowFullScreen: view(\(String(describing: id), privacy: .public)).window == nil, superview=\(String(describing: view.superview), privacy: .public), NSApp.windows=[\(appWindows, privacy: .public)]")
+                return
+            }
             didConfigureFullScreenWindow = true
+            Self.log.debug("enableWindowFullScreen: before styleMask=\(window.styleMask.rawValue, privacy: .public) collectionBehavior=\(window.collectionBehavior.rawValue, privacy: .public)")
+            // SwiftUI's .windowStyle(.hiddenTitleBar) sets .fullScreenNone by default, which
+            // blocks fullscreen outright even if .fullScreenPrimary is also present — both
+            // together is contradictory and .fullScreenNone wins. Must remove it explicitly.
+            window.collectionBehavior.remove(.fullScreenNone)
             window.collectionBehavior.insert(.fullScreenPrimary)
             if !window.styleMask.contains(.resizable) {
                 window.styleMask.insert(.resizable)
             }
+            Self.log.debug("enableWindowFullScreen: after styleMask=\(window.styleMask.rawValue, privacy: .public) collectionBehavior=\(window.collectionBehavior.rawValue, privacy: .public)")
+        }
+
+        nonisolated func playerViewWillEnterFullScreen(_ playerView: AVPlayerView) {
+            Self.log.debug("playerViewWillEnterFullScreen")
+        }
+
+        nonisolated func playerViewDidEnterFullScreen(_ playerView: AVPlayerView) {
+            Self.log.debug("playerViewDidEnterFullScreen")
+        }
+
+        nonisolated func playerViewWillExitFullScreen(_ playerView: AVPlayerView) {
+            Self.log.debug("playerViewWillExitFullScreen")
+        }
+
+        nonisolated func playerViewDidExitFullScreen(_ playerView: AVPlayerView) {
+            Self.log.debug("playerViewDidExitFullScreen")
         }
 
         func load(
