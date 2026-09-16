@@ -26,6 +26,7 @@ struct MemoryMeetingDetail: Codable, Equatable, Sendable, Identifiable {
     var notes: [String]
     var decisions: [String]
     var actionItems: [String]
+    var asks: [String]
     var topics: [String]
     var openQuestions: [String]
     var transcriptExcerpt: String
@@ -115,10 +116,11 @@ enum MeetingMemoryQuery {
             summaryTitle: summary?.title,
             summary: summary?.summary,
             notes: summary?.notes ?? [],
-            decisions: summary?.decisions ?? [],
+            decisions: (summary?.decisions ?? []).map(\.text),
             actionItems: (summary?.actionItems ?? []).map(\.text),
-            topics: summary?.topics ?? [],
-            openQuestions: summary?.openQuestions ?? [],
+            asks: (summary?.asks ?? []).map(\.text),
+            topics: (summary?.topics ?? []).map(\.title),
+            openQuestions: (summary?.openQuestions ?? []).map(\.text),
             transcriptExcerpt: excerpt,
             memoryIndexedAt: meeting.memoryIndexedAt
         )

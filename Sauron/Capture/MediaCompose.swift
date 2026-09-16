@@ -90,18 +90,22 @@ enum MediaCompose {
         let system = usableMediaURL(systemURL)
         guard mic != nil || system != nil else { return nil }
 
-        try? FileManager.default.removeItem(at: outputURL)
         try FileManager.default.createDirectory(
             at: outputURL.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
 
+        // Reprocessing can pass the same path back in as both a source and `outputURL` (e.g.
+        // re-mixing from an already-mixed file). Never delete/overwrite the destination before
+        // the source has been fully read — copy/export to a sibling temp file, then replace.
         if let mic, system == nil {
-            try FileManager.default.copyItem(at: mic, to: outputURL)
+            if mic == outputURL { return outputURL }
+            try replaceItem(at: outputURL, withContentsCopiedFrom: mic)
             return outputURL
         }
         if let system, mic == nil {
-            try FileManager.default.copyItem(at: system, to: outputURL)
+            if system == outputURL { return outputURL }
+            try replaceItem(at: outputURL, withContentsCopiedFrom: system)
             return outputURL
         }
 
@@ -160,10 +164,13 @@ enum MediaCompose {
             }
             export.audioMix = mix
 
-            try await export.export(to: outputURL, as: .m4a)
-            guard FileManager.default.fileExists(atPath: outputURL.path) else {
+            let tempURL = temporaryURL(near: outputURL)
+            defer { try? FileManager.default.removeItem(at: tempURL) }
+            try await export.export(to: tempURL, as: .m4a)
+            guard FileManager.default.fileExists(atPath: tempURL.path) else {
                 throw SauronError.captureFailed("Audio mix export did not finish.")
             }
+            try replaceItem(at: outputURL, movingFrom: tempURL)
             return outputURL
         }
     }
@@ -176,7 +183,10 @@ enum MediaCompose {
         guard let video = usableMediaURL(videoURL) else { return nil }
         guard let audio = usableMediaURL(audioURL) else { return video }
 
-        try? FileManager.default.removeItem(at: outputURL)
+        // Reprocessing can pass the already-composed output back in as `videoURL` (its raw
+        // capture reference is gone once composed once). Never delete/overwrite `outputURL`
+        // before `video`/`audio` have been fully read — every export below lands in a sibling
+        // temp file first and is only moved into place once reading is done.
         try FileManager.default.createDirectory(
             at: outputURL.deletingLastPathComponent(),
             withIntermediateDirectories: true
@@ -236,21 +246,24 @@ enum MediaCompose {
             let candidates = MediaEncodePolicy.muxPresetPreference.filter { available.contains($0) }
             let presets = candidates.isEmpty ? [AVAssetExportPresetPassthrough] : candidates
 
+            let tempURL = temporaryURL(near: outputURL)
+            defer { try? FileManager.default.removeItem(at: tempURL) }
             for preset in presets {
-                try? FileManager.default.removeItem(at: outputURL)
+                try? FileManager.default.removeItem(at: tempURL)
                 guard let export = AVAssetExportSession(asset: composition, presetName: preset) else {
                     continue
                 }
                 do {
-                    try await export.export(to: outputURL, as: .mp4)
+                    try await export.export(to: tempURL, as: .mp4)
                 } catch {
                     continue
                 }
-                let outputSize = (try? outputURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+                let outputSize = (try? tempURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
                 let outputBPS = Double(outputSize) / max(videoDuration.seconds, 1)
-                if FileManager.default.fileExists(atPath: outputURL.path),
+                if FileManager.default.fileExists(atPath: tempURL.path),
                    outputSize > 0,
                    outputBPS > 12_000 {
+                    try replaceItem(at: outputURL, movingFrom: tempURL)
                     return outputURL
                 }
             }
@@ -267,6 +280,36 @@ enum MediaCompose {
               (values.fileSize ?? 0) > 0
         else { return nil }
         return url
+    }
+
+    /// A sibling of `url` in the same directory (so the final move is a same-volume rename,
+    /// not a cross-device copy) that won't collide with a real file.
+    private static func temporaryURL(near url: URL) -> URL {
+        url.deletingLastPathComponent()
+            .appendingPathComponent(".tmp-\(UUID().uuidString)-\(url.lastPathComponent)")
+    }
+
+    /// Moves `tempURL` onto `outputURL`, replacing whatever (if anything) is there.
+    private static func replaceItem(at outputURL: URL, movingFrom tempURL: URL) throws {
+        if FileManager.default.fileExists(atPath: outputURL.path) {
+            _ = try FileManager.default.replaceItemAt(outputURL, withItemAt: tempURL)
+        } else {
+            try FileManager.default.moveItem(at: tempURL, to: outputURL)
+        }
+    }
+
+    /// Copies `source` onto `outputURL` via a temp file, replacing whatever (if anything) is
+    /// already at `outputURL` only once the copy has fully succeeded.
+    private static func replaceItem(at outputURL: URL, withContentsCopiedFrom source: URL) throws {
+        let tempURL = temporaryURL(near: outputURL)
+        try? FileManager.default.removeItem(at: tempURL)
+        try FileManager.default.copyItem(at: source, to: tempURL)
+        do {
+            try replaceItem(at: outputURL, movingFrom: tempURL)
+        } catch {
+            try? FileManager.default.removeItem(at: tempURL)
+            throw error
+        }
     }
 }
 

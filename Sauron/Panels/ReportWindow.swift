@@ -125,6 +125,11 @@ struct ReportDetailView: View {
         .onAppear {
             speakerStore.attach(context: appState.modelContext)
             refreshSortedSegments()
+            if let seek = appState.pendingReportSeek {
+                playback.followTranscript = true
+                playback.seek(to: seek)
+                appState.pendingReportSeek = nil
+            }
         }
         .onChange(of: meeting.segments.count) { _, _ in
             refreshSortedSegments()
@@ -134,6 +139,12 @@ struct ReportDetailView: View {
         }
         .onChange(of: appState.mediaReadyToken) { _, _ in
             refreshSortedSegments()
+        }
+        .onChange(of: appState.reportToken) { _, _ in
+            guard appState.selectedMeeting?.id == meeting.id, let seek = appState.pendingReportSeek else { return }
+            playback.followTranscript = true
+            playback.seek(to: seek)
+            appState.pendingReportSeek = nil
         }
     }
 
@@ -359,8 +370,8 @@ struct ReportDetailView: View {
         if !summary.topics.isEmpty {
             reportBlock(title: "Topics", systemImage: "tag") {
                 VStack(alignment: .leading, spacing: 8) {
-                    ForEach(summary.topics, id: \.self) { item in
-                        Label(item, systemImage: "number")
+                    ForEach(summary.topics) { item in
+                        Label(item.title, systemImage: "number")
                     }
                 }
             }
@@ -378,8 +389,12 @@ struct ReportDetailView: View {
         if !summary.decisions.isEmpty {
             reportBlock(title: "Decisions", systemImage: "checkmark.circle") {
                 VStack(alignment: .leading, spacing: 8) {
-                    ForEach(summary.decisions, id: \.self) { item in
-                        Label(item, systemImage: "checkmark")
+                    ForEach(summary.decisions) { item in
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Label(item.text, systemImage: "checkmark")
+                            Spacer(minLength: 8)
+                            evidencePlayButton(item.timestamp)
+                        }
                     }
                 }
             }
@@ -395,6 +410,8 @@ struct ReportDetailView: View {
                                     .foregroundStyle(SauronTheme.accent)
                                 Text(item.text)
                                     .textSelection(.enabled)
+                                Spacer(minLength: 8)
+                                evidencePlayButton(item.timestamp)
                             }
                             HStack(spacing: 8) {
                                 if let owner = item.owner, !owner.isEmpty {
@@ -426,8 +443,12 @@ struct ReportDetailView: View {
         if !summary.blockers.isEmpty {
             reportBlock(title: "Blockers & risks", systemImage: "exclamationmark.triangle") {
                 VStack(alignment: .leading, spacing: 8) {
-                    ForEach(summary.blockers, id: \.self) { item in
-                        Label(item, systemImage: "exclamationmark.circle")
+                    ForEach(summary.blockers) { item in
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Label(item.text, systemImage: "exclamationmark.circle")
+                            Spacer(minLength: 8)
+                            evidencePlayButton(item.timestamp)
+                        }
                     }
                 }
             }
@@ -435,8 +456,33 @@ struct ReportDetailView: View {
         if !summary.openQuestions.isEmpty {
             reportBlock(title: "Open questions", systemImage: "questionmark.circle") {
                 VStack(alignment: .leading, spacing: 8) {
-                    ForEach(summary.openQuestions, id: \.self) { item in
-                        Text(item)
+                    ForEach(summary.openQuestions) { item in
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(item.text)
+                            Spacer(minLength: 8)
+                            evidencePlayButton(item.timestamp)
+                        }
+                    }
+                }
+            }
+        }
+        if !summary.resolvedInMeeting.isEmpty {
+            reportBlock(title: "Resolved in this meeting", systemImage: "checkmark.seal") {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(summary.resolvedInMeeting) { item in
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                Label(item.text, systemImage: "checkmark.seal")
+                                Spacer(minLength: 8)
+                                evidencePlayButton(item.timestamp)
+                            }
+                            if !item.resolution.isEmpty {
+                                Text(item.resolution)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.leading, 18)
+                            }
+                        }
                     }
                 }
             }
@@ -444,12 +490,38 @@ struct ReportDetailView: View {
         if !summary.quotes.isEmpty {
             reportBlock(title: "Quotes", systemImage: "quote.opening") {
                 VStack(alignment: .leading, spacing: 8) {
-                    ForEach(summary.quotes, id: \.self) { item in
-                        Text("“\(item)”")
-                            .italic()
+                    ForEach(summary.quotes) { item in
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text("“\(item.text)”\(item.speaker.map { " — \($0)" } ?? "")")
+                                .italic()
+                            Spacer(minLength: 8)
+                            evidencePlayButton(item.timestamp)
+                        }
                     }
                 }
             }
+        }
+    }
+
+    /// Small play affordance next to an evidence-linked report item — seeks the attached
+    /// player to the resolved transcript timestamp (see TranscriptTimestampResolver) and
+    /// keeps the transcript pane in sync, mirroring tapping a transcript line directly.
+    @ViewBuilder
+    private func evidencePlayButton(_ timestamp: TimeInterval?) -> some View {
+        if let timestamp, meeting.hasPlayableMedia {
+            Button {
+                playback.followTranscript = true
+                playback.seek(to: timestamp)
+                if playback.player?.rate == 0 {
+                    playback.player?.play()
+                }
+            } label: {
+                Label(timestamp.observerClock, systemImage: "play.circle.fill")
+                    .font(.caption.weight(.medium))
+                    .labelStyle(.titleAndIcon)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(SauronTheme.accent)
         }
     }
 

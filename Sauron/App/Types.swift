@@ -473,106 +473,155 @@ struct LiveSegment: Identifiable, Equatable, Sendable {
     }
 }
 
-struct ActionItem: Codable, Equatable, Sendable, Identifiable {
-    var id: UUID
-    var owner: String?
-    var text: String
-    var due: String?
-
-    init(id: UUID = UUID(), owner: String? = nil, text: String, due: String? = nil) {
-        self.id = id
-        self.owner = owner
-        self.text = text
-        self.due = due
-    }
-
-    enum CodingKeys: String, CodingKey { case id, owner, text, due }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
-        owner = try container.decodeIfPresent(String.self, forKey: .owner)
-        text = try container.decode(String.self, forKey: .text)
-        due = try container.decodeIfPresent(String.self, forKey: .due)
-    }
-}
+// `ActionItem` and the rest of the meeting-structure taxonomy (Decision, Ask, Blocker, Topic, …)
+// live in Sauron/Models/MeetingStructure.swift, shared with the live extractor's vocabulary.
 
 struct MeetingSummary: Codable, Equatable, Sendable {
     var title: String
+    var meetingType: MeetingType
     var summary: String
-    var notes: [String]
-    var keyPeople: [String]
-    var topics: [String]
-    var decisions: [String]
+    var tldr: [String]
+    var attendees: [Attendee]
+    var topics: [Topic]
+    var decisions: [Decision]
     var actionItems: [ActionItem]
+    var asks: [Ask]
+    var resolvedInMeeting: [ResolvedInMeetingItem]
+    var openQuestions: [OpenQuestion]
+    var blockers: [Blocker]
     var nextSteps: [String]
-    var blockers: [String]
-    var openQuestions: [String]
-    var quotes: [String]
+    var dates: [KeyDate]
+    var metrics: [Metric]
+    var entities: [Entity]
+    var priorItemUpdates: [PriorItemUpdate]
+    var quotes: [Quote]
+    var sentiment: MeetingSentiment?
+    var quality: MeetingQuality?
     var rawText: String?
+
+    /// Legacy display alias: pre-refactor summaries stored free-form bullets as `notes`; the new
+    /// schema captures the same idea as `tldr`. Kept so `ReportWindow`/`DashboardLibraryTab` don't
+    /// need to know about the schema change.
+    var notes: [String] { tldr }
+
+    /// Legacy display alias: derived from `attendees` so `ReportWindow`/`DashboardLibraryTab`'s
+    /// existing `[String]`-typed reads keep working unchanged.
+    var keyPeople: [String] { attendees.map(\.name) }
 
     static let empty = MeetingSummary(
         title: "",
+        meetingType: .other,
         summary: "",
-        notes: [],
-        keyPeople: [],
+        tldr: [],
+        attendees: [],
         topics: [],
         decisions: [],
         actionItems: [],
-        nextSteps: [],
-        blockers: [],
+        asks: [],
+        resolvedInMeeting: [],
         openQuestions: [],
+        blockers: [],
+        nextSteps: [],
+        dates: [],
+        metrics: [],
+        entities: [],
+        priorItemUpdates: [],
         quotes: [],
+        sentiment: nil,
+        quality: nil,
         rawText: nil
     )
 
     enum CodingKeys: String, CodingKey {
-        case title, summary, notes, keyPeople, topics, decisions
-        case actionItems, nextSteps, blockers, openQuestions, quotes, rawText
+        case title, meetingType, summary, tldr, attendees, topics, decisions
+        case actionItems, asks, resolvedInMeeting, openQuestions, blockers, nextSteps
+        case dates, metrics, entities, priorItemUpdates, quotes, sentiment, quality, rawText
     }
+
+    /// Legacy keys this schema replaced (`notes` → `tldr`, `keyPeople` → `attendees`), read only
+    /// when the new keys are absent so meetings summarized before this refactor still display.
+    private enum LegacyCodingKeys: String, CodingKey { case notes, keyPeople }
 
     init(
         title: String,
+        meetingType: MeetingType = .other,
         summary: String,
-        notes: [String] = [],
-        keyPeople: [String] = [],
-        topics: [String] = [],
-        decisions: [String],
+        tldr: [String] = [],
+        attendees: [Attendee] = [],
+        topics: [Topic] = [],
+        decisions: [Decision] = [],
         actionItems: [ActionItem],
+        asks: [Ask] = [],
+        resolvedInMeeting: [ResolvedInMeetingItem] = [],
+        openQuestions: [OpenQuestion],
+        blockers: [Blocker] = [],
         nextSteps: [String] = [],
-        blockers: [String] = [],
-        openQuestions: [String],
-        quotes: [String],
+        dates: [KeyDate] = [],
+        metrics: [Metric] = [],
+        entities: [Entity] = [],
+        priorItemUpdates: [PriorItemUpdate] = [],
+        quotes: [Quote],
+        sentiment: MeetingSentiment? = nil,
+        quality: MeetingQuality? = nil,
         rawText: String? = nil
     ) {
         self.title = title
+        self.meetingType = meetingType
         self.summary = summary
-        self.notes = notes
-        self.keyPeople = keyPeople
+        self.tldr = tldr
+        self.attendees = attendees
         self.topics = topics
         self.decisions = decisions
         self.actionItems = actionItems
-        self.nextSteps = nextSteps
-        self.blockers = blockers
+        self.asks = asks
+        self.resolvedInMeeting = resolvedInMeeting
         self.openQuestions = openQuestions
+        self.blockers = blockers
+        self.nextSteps = nextSteps
+        self.dates = dates
+        self.metrics = metrics
+        self.entities = entities
+        self.priorItemUpdates = priorItemUpdates
         self.quotes = quotes
+        self.sentiment = sentiment
+        self.quality = quality
         self.rawText = rawText
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         title = try container.decode(String.self, forKey: .title)
+        meetingType = try container.decodeIfPresent(MeetingType.self, forKey: .meetingType) ?? .other
         summary = try container.decode(String.self, forKey: .summary)
-        notes = try container.decodeIfPresent([String].self, forKey: .notes) ?? []
-        keyPeople = try container.decodeIfPresent([String].self, forKey: .keyPeople) ?? []
-        topics = try container.decodeIfPresent([String].self, forKey: .topics) ?? []
-        decisions = try container.decodeIfPresent([String].self, forKey: .decisions) ?? []
+        topics = try container.decodeIfPresent([Topic].self, forKey: .topics) ?? []
+        decisions = try container.decodeIfPresent([Decision].self, forKey: .decisions) ?? []
         actionItems = try container.decodeIfPresent([ActionItem].self, forKey: .actionItems) ?? []
+        asks = try container.decodeIfPresent([Ask].self, forKey: .asks) ?? []
+        resolvedInMeeting = try container.decodeIfPresent([ResolvedInMeetingItem].self, forKey: .resolvedInMeeting) ?? []
+        openQuestions = try container.decodeIfPresent([OpenQuestion].self, forKey: .openQuestions) ?? []
+        blockers = try container.decodeIfPresent([Blocker].self, forKey: .blockers) ?? []
         nextSteps = try container.decodeIfPresent([String].self, forKey: .nextSteps) ?? []
-        blockers = try container.decodeIfPresent([String].self, forKey: .blockers) ?? []
-        openQuestions = try container.decodeIfPresent([String].self, forKey: .openQuestions) ?? []
-        quotes = try container.decodeIfPresent([String].self, forKey: .quotes) ?? []
+        dates = try container.decodeIfPresent([KeyDate].self, forKey: .dates) ?? []
+        metrics = try container.decodeIfPresent([Metric].self, forKey: .metrics) ?? []
+        entities = try container.decodeIfPresent([Entity].self, forKey: .entities) ?? []
+        priorItemUpdates = try container.decodeIfPresent([PriorItemUpdate].self, forKey: .priorItemUpdates) ?? []
+        quotes = try container.decodeIfPresent([Quote].self, forKey: .quotes) ?? []
+        sentiment = try container.decodeIfPresent(MeetingSentiment.self, forKey: .sentiment)
+        quality = try container.decodeIfPresent(MeetingQuality.self, forKey: .quality)
         rawText = try container.decodeIfPresent(String.self, forKey: .rawText)
+
+        let legacyContainer = try? decoder.container(keyedBy: LegacyCodingKeys.self)
+        var tldr = try container.decodeIfPresent([String].self, forKey: .tldr) ?? []
+        if tldr.isEmpty, let legacyContainer, let legacyNotes = try? legacyContainer.decodeIfPresent([String].self, forKey: .notes) {
+            tldr = legacyNotes
+        }
+        self.tldr = tldr
+
+        var attendees = try container.decodeIfPresent([Attendee].self, forKey: .attendees) ?? []
+        if attendees.isEmpty, let legacyContainer, let legacyPeople = try? legacyContainer.decodeIfPresent([String].self, forKey: .keyPeople) {
+            attendees = legacyPeople.map { Attendee(name: $0) }
+        }
+        self.attendees = attendees
     }
 }
 
@@ -584,9 +633,16 @@ struct MeetingPresenceScores: Codable, Equatable, Sendable {
     var collaboration: Double
     var note: String?
     var scoredAt: Date
+    var evidence: [String: String]
+    var talkShare: Double?
+    var fillerNote: String?
+    var strength: String?
+    var improvement: String?
+    var evidenceLevel: String?
 
     enum CodingKeys: String, CodingKey {
         case likeability, professionalism, receptiveness, clarity, collaboration, note, scoredAt
+        case evidence, talkShare, fillerNote, strength, improvement, evidenceLevel
     }
 
     init(
@@ -596,7 +652,13 @@ struct MeetingPresenceScores: Codable, Equatable, Sendable {
         clarity: Double,
         collaboration: Double,
         note: String? = nil,
-        scoredAt: Date = .now
+        scoredAt: Date = .now,
+        evidence: [String: String] = [:],
+        talkShare: Double? = nil,
+        fillerNote: String? = nil,
+        strength: String? = nil,
+        improvement: String? = nil,
+        evidenceLevel: String? = nil
     ) {
         self.likeability = Self.clamp(likeability)
         self.professionalism = Self.clamp(professionalism)
@@ -605,6 +667,12 @@ struct MeetingPresenceScores: Codable, Equatable, Sendable {
         self.collaboration = Self.clamp(collaboration)
         self.note = note
         self.scoredAt = scoredAt
+        self.evidence = evidence
+        self.talkShare = talkShare
+        self.fillerNote = fillerNote
+        self.strength = strength
+        self.improvement = improvement
+        self.evidenceLevel = evidenceLevel
     }
 
     init(from decoder: Decoder) throws {
@@ -616,6 +684,12 @@ struct MeetingPresenceScores: Codable, Equatable, Sendable {
         collaboration = Self.clamp(try container.decode(Double.self, forKey: .collaboration))
         note = try container.decodeIfPresent(String.self, forKey: .note)
         scoredAt = try container.decodeIfPresent(Date.self, forKey: .scoredAt) ?? .now
+        evidence = try container.decodeIfPresent([String: String].self, forKey: .evidence) ?? [:]
+        talkShare = try container.decodeIfPresent(Double.self, forKey: .talkShare)
+        fillerNote = try container.decodeIfPresent(String.self, forKey: .fillerNote)
+        strength = try container.decodeIfPresent(String.self, forKey: .strength)
+        improvement = try container.decodeIfPresent(String.self, forKey: .improvement)
+        evidenceLevel = try container.decodeIfPresent(String.self, forKey: .evidenceLevel)
     }
 
     var average: Double {

@@ -29,6 +29,9 @@ final class AppState {
     var errorMessage: String?
     var wantsOnboarding = false
     var reportToken: UUID?
+    /// A timestamp to seek to as soon as the just-opened report's player is ready — set by
+    /// `openReport(_:seekTo:)`, consumed and cleared by `ReportDetailView` on appear.
+    var pendingReportSeek: TimeInterval?
     var dashboardToken: UUID?
     var dashboardSelectedTab: DashboardTab = .home
     var lastError: String?
@@ -313,8 +316,9 @@ final class AppState {
         Task { await finishRecording() }
     }
 
-    func openReport(_ meeting: Meeting) {
+    func openReport(_ meeting: Meeting, seekTo timestamp: TimeInterval? = nil) {
         selectedMeeting = meeting
+        pendingReportSeek = timestamp
         reportToken = UUID()
         NSApp.activate(ignoringOtherApps: true)
     }
@@ -835,6 +839,33 @@ final class AppState {
         status = settings.watchForMeetings ? .detecting : .idle
     }
 
+    private struct ReconciliationCandidate {
+        var item: TrackedItem
+        var openItem: TrackedItemReconciler.OpenItem
+    }
+
+    /// Open tracked items from meetings other than `meetingID`, paired with the origin-meeting
+    /// metadata both the summarizer's hints and the reconciler's matching need.
+    private func openTrackedItemsForReconciliation(excluding meetingID: UUID) -> [ReconciliationCandidate] {
+        TrackedItemStore.openItems(context: modelContext, limit: 50)
+            .filter { $0.sourceMeetingID != meetingID }
+            .map { item in
+                let origin = MeetingStore.meeting(id: item.sourceMeetingID, context: modelContext)
+                return ReconciliationCandidate(
+                    item: item,
+                    openItem: TrackedItemReconciler.OpenItem(
+                        id: item.id,
+                        kind: item.kind.rawValue,
+                        owner: item.owner,
+                        text: item.text,
+                        originMeetingTitle: origin?.title ?? item.sourceMeetingTitle,
+                        originMeetingID: item.sourceMeetingID,
+                        originDate: origin?.startedAt ?? item.createdAt
+                    )
+                )
+            }
+    }
+
     private func summarize(_ meeting: Meeting) async {
         meeting.status = .processing
         try? modelContext.save()
@@ -858,10 +889,17 @@ final class AppState {
                     excludingMeetingID: meeting.id
                 )
                 : (context: "", citations: [])
+            let candidates = openTrackedItemsForReconciliation(excluding: meeting.id)
+            let ownerDisplayName = SpeakerProfileStore.shared.displayName(for: SpeakerKey.selfKey)
             let messages = Summarizer.messages(
                 transcript: transcript,
                 meetingTitle: meeting.title,
                 appName: meeting.appName,
+                meetingDate: meeting.startedAt,
+                durationMinutes: Int(meeting.duration / 60),
+                ownerDisplayName: ownerDisplayName,
+                ledger: liveAssistant.lastSurfacedItems,
+                openItems: candidates.map(\.openItem),
                 memoryContext: injectMemory ? memory.context : nil,
                 mcpToolHint: injectMemory ? nil : MemoryMCPHints.systemPromptAddon
             )
@@ -870,7 +908,8 @@ final class AppState {
                 raw += chunk
                 streamPreview = raw
             }
-            let summary = Summarizer.parse(raw)
+            var summary = Summarizer.parse(raw)
+            summary = TranscriptTimestampResolver.resolve(summary, segments: meeting.segments)
             if let data = try? JSONEncoder().encode(summary) {
                 meeting.summaryJSON = String(data: data, encoding: .utf8)
             }
@@ -882,9 +921,17 @@ final class AppState {
             try? modelContext.save()
 
             TrackedItemStore.sync(from: summary, meeting: meeting, context: modelContext)
-            await reconcileTrackedItems(for: meeting, summary: summary, transcript: transcript, client: client, model: model)
+            await reconcileTrackedItems(
+                for: meeting,
+                summary: summary,
+                candidates: candidates,
+                transcript: transcript,
+                client: client,
+                model: model,
+                memoryEnabled: settings.memoryEnabled
+            )
             await MeetingMemoryIndexer.index(meeting: meeting, appState: self)
-            await scorePresence(for: meeting, transcript: transcript, client: client, model: model)
+            await scorePresence(for: meeting, transcript: transcript, meetingType: summary.meetingType, client: client, model: model)
         } catch {
             meeting.status = transcript.isEmpty ? .ready : .failed
             lastError = error.localizedDescription
@@ -896,6 +943,7 @@ final class AppState {
     private func scorePresence(
         for meeting: Meeting,
         transcript: String,
+        meetingType: MeetingType,
         client: LLMClient,
         model: String
     ) async {
@@ -903,7 +951,8 @@ final class AppState {
         let messages = PresenceHeuristicsScorer.messages(
             selfTranscript: selfText,
             fullTranscript: transcript,
-            meetingTitle: meeting.title
+            meetingTitle: meeting.title,
+            meetingType: meetingType
         )
         do {
             let raw = try await client.complete(model: model, messages: messages)
@@ -916,36 +965,85 @@ final class AppState {
         }
     }
 
+    /// Two-tier apply: strong, verified evidence closes items immediately; everything else becomes
+    /// a `TrackedItemProposal` for the user (or the `resolve_tracked_item_proposal` MCP tool) to
+    /// confirm. See TrackedItemReconciler's decision-policy doc comment for the exact thresholds.
     private func reconcileTrackedItems(
         for meeting: Meeting,
         summary: MeetingSummary,
+        candidates: [ReconciliationCandidate],
         transcript: String,
         client: LLMClient,
-        model: String
+        model: String,
+        memoryEnabled: Bool
     ) async {
-        let open = TrackedItemStore.openItems(context: modelContext, limit: 50)
-            .filter { $0.sourceMeetingID != meeting.id }
-        guard !open.isEmpty else { return }
-        let payload = open.map { (id: $0.id, kind: $0.kind.rawValue, text: $0.text, owner: $0.owner) }
+        guard !candidates.isEmpty else { return }
         let messages = TrackedItemReconciler.messages(
-            openItems: payload,
+            openItems: candidates.map(\.openItem),
             meetingTitle: meeting.title,
+            meetingDate: meeting.startedAt,
             summaryText: summary.summary,
-            transcript: transcript
+            priorItemUpdates: summary.priorItemUpdates,
+            resolvedInMeeting: summary.resolvedInMeeting,
+            transcript: transcript,
+            memoryEnabled: memoryEnabled
         )
         do {
             let raw = try await client.complete(model: model, messages: messages)
-            let resolutions = TrackedItemReconciler.parse(raw)
-            let byID = Dictionary(uniqueKeysWithValues: open.map { ($0.id, $0) })
-            for resolution in resolutions {
-                guard let item = byID[resolution.id] else { continue }
-                TrackedItemStore.complete(
-                    item,
-                    by: .auto,
-                    resolvedInMeetingID: meeting.id,
-                    note: resolution.note.isEmpty ? nil : resolution.note,
-                    context: modelContext
+            let result = TrackedItemReconciler.parse(raw)
+            let byID = Dictionary(uniqueKeysWithValues: candidates.map { ($0.item.id, $0.item) })
+            var log: [ReconciliationLogEntry] = []
+            for update in result.updates {
+                guard let item = byID[update.id] else { continue }
+                let eligibleForAutoApply = update.autoApply
+                    && update.confidence >= 0.8
+                    && [.transcriptExplicit, .corroborated].contains(update.verification)
+                    && [.completed, .dropped].contains(update.status)
+                if eligibleForAutoApply {
+                    switch update.status {
+                    case .completed:
+                        TrackedItemStore.complete(
+                            item,
+                            by: .auto,
+                            resolvedInMeetingID: meeting.id,
+                            note: update.note.isEmpty ? nil : update.note,
+                            context: modelContext
+                        )
+                    case .dropped:
+                        TrackedItemStore.dismiss(item, by: .auto, context: modelContext)
+                    default:
+                        break
+                    }
+                } else {
+                    TrackedItemProposalStore.create(
+                        trackedItemID: item.id,
+                        sourceMeetingID: meeting.id,
+                        sourceMeetingTitle: meeting.title,
+                        proposedStatus: update.status,
+                        verification: update.verification,
+                        confidence: update.confidence,
+                        note: update.note,
+                        evidence: update.evidence,
+                        newOwner: update.newOwner,
+                        supersededByText: update.supersededByText,
+                        context: modelContext
+                    )
+                }
+                log.append(
+                    ReconciliationLogEntry(
+                        itemID: item.id,
+                        status: update.status,
+                        verification: update.verification,
+                        confidence: update.confidence,
+                        autoApplied: eligibleForAutoApply,
+                        note: update.note,
+                        at: .now
+                    )
                 )
+            }
+            if !log.isEmpty {
+                meeting.reconciliationLog = meeting.reconciliationLog + log
+                try? modelContext.save()
             }
         } catch {
             // Soft-fail: leave open items unchanged.

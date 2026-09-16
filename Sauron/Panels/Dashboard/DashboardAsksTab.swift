@@ -107,9 +107,15 @@ struct DashboardAsksTab: View {
                     Text("Open the source meeting report to review transcript context and mark related asks.")
                         .font(.system(size: 12))
                         .foregroundStyle(SauronTheme.textSecondary)
-                    Button("Open source meeting") {
+                    Button {
                         if let meeting = MeetingStore.meeting(id: item.sourceMeetingID, context: appState.modelContext) {
-                            appState.openReport(meeting)
+                            appState.openReport(meeting, seekTo: item.timestamp)
+                        }
+                    } label: {
+                        if let timestamp = item.timestamp {
+                            Label("Play from \(timestamp.observerClock)", systemImage: "play.circle.fill")
+                        } else {
+                            Text("Open source meeting")
                         }
                     }
                     .observerGlassButton()

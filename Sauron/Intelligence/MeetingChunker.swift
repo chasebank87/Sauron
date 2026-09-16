@@ -9,6 +9,7 @@ enum MemoryChunkKind: String, Codable, Sendable {
     case topic
     case ask
     case blocker
+    case resolved
     case document
     case userNote
 }
@@ -46,10 +47,12 @@ enum MeetingChunker {
                 appendBlock(&result, meetingID: meetingID, title: title, date: date, kind: .notes, text: note)
             }
             for topic in summary.topics {
-                appendBlock(&result, meetingID: meetingID, title: title, date: date, kind: .topic, text: topic)
+                let text = topic.summary.isEmpty ? topic.title : "\(topic.title): \(topic.summary)"
+                appendBlock(&result, meetingID: meetingID, title: title, date: date, kind: .topic, text: text)
             }
             for decision in summary.decisions {
-                appendBlock(&result, meetingID: meetingID, title: title, date: date, kind: .decision, text: decision)
+                let rationale = decision.rationale.map { " (\($0))" } ?? ""
+                appendBlock(&result, meetingID: meetingID, title: title, date: date, kind: .decision, text: "\(decision.text)\(rationale)")
             }
             for action in summary.actionItems {
                 let owner = action.owner.map { " (\($0))" } ?? ""
@@ -62,11 +65,17 @@ enum MeetingChunker {
                     text: "\(action.text)\(owner)"
                 )
             }
-            for ask in summary.openQuestions {
-                appendBlock(&result, meetingID: meetingID, title: title, date: date, kind: .ask, text: ask)
+            for ask in summary.asks {
+                appendBlock(&result, meetingID: meetingID, title: title, date: date, kind: .ask, text: "\(ask.text) (\(ask.status.rawValue))")
+            }
+            for question in summary.openQuestions {
+                appendBlock(&result, meetingID: meetingID, title: title, date: date, kind: .ask, text: question.text)
             }
             for blocker in summary.blockers {
-                appendBlock(&result, meetingID: meetingID, title: title, date: date, kind: .blocker, text: blocker)
+                appendBlock(&result, meetingID: meetingID, title: title, date: date, kind: .blocker, text: "\(blocker.text) (\(blocker.severity.rawValue))")
+            }
+            for resolved in summary.resolvedInMeeting {
+                appendBlock(&result, meetingID: meetingID, title: title, date: date, kind: .resolved, text: "\(resolved.text) → \(resolved.resolution)")
             }
         }
 

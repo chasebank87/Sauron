@@ -10,6 +10,7 @@
 		002D509ABF6E4A4EC6A5CEC1 /* WindowShareAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = F127B78E5E5AB1D04954FBE7 /* WindowShareAccess.swift */; };
 		0222E625B7DC1E1FE26474D2 /* DashboardHomeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C0B1EE8A9A54A430009E86 /* DashboardHomeTab.swift */; };
 		028E0F868611E2ABEE38B706 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A88653CB16E58B08B97254 /* Models.swift */; };
+		061BA53A84A3A8DCF191F4EF /* MeetingStructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 337F88478A854D38446312D6 /* MeetingStructure.swift */; };
 		0662F8AD7507B1A31878B4A8 /* Types.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358C4E339FFCA3376302B905 /* Types.swift */; };
 		095753BC13A0C8EDADA26E93 /* DashboardPeopleTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EFAB08E9757A877A8B0D3D8 /* DashboardPeopleTab.swift */; };
 		0D788E2C8E025A6EF560FF73 /* MeetingUserNotesEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C6840B3B6B1A3CD5C12FFBD /* MeetingUserNotesEditor.swift */; };
@@ -46,6 +47,7 @@
 		55522DB8F28D32DAD5AC3EEA /* MeetingMemoryIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D4C378F0AC696AD74B30F5 /* MeetingMemoryIndexer.swift */; };
 		55D27F05526685B7D319C352 /* MeetingWindowPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 864C79DFACFEE1C17BD49859 /* MeetingWindowPicker.swift */; };
 		58011291A9A02C7FFAA8B44F /* WindowOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCB1032AF945A9AD1D2DAB8 /* WindowOpener.swift */; };
+		585A849BFDCD7BEC2B2C9B27 /* TrackedItemProposalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71AF3245F42119EFDEDD4D99 /* TrackedItemProposalStore.swift */; };
 		5BD901FD3163A1AA7284CAAA /* LLMClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D186E7FE68A4450A5E3F31C /* LLMClient.swift */; };
 		5FC2CEDAB8BA30675FFEE5A4 /* ScreenCaptureAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EBC3BD160FC5C75BDB95D49 /* ScreenCaptureAccess.swift */; };
 		60BC145F8539FE48885A2C26 /* GlobalHotkeyMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707BC17E5CE3C97484E02177 /* GlobalHotkeyMonitor.swift */; };
@@ -61,6 +63,7 @@
 		77B862579BF821B2AA6CD307 /* TranscriptPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDF5D0FBBF75FA465CD9F45 /* TranscriptPanel.swift */; };
 		79AE9AD58429C2674124C6F8 /* HermesMCPInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6AA3978C3E8A54D1B20B99 /* HermesMCPInstaller.swift */; };
 		7E50D2DCDA7DCC4BF17D3A22 /* ConfettiCannonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A27E1668E53470A282F524 /* ConfettiCannonView.swift */; };
+		802B896A604076F93D0CED30 /* SauronPrompts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1CC27BB552A1812CEB5B24 /* SauronPrompts.swift */; };
 		857E146A1920916744973A5D /* TavilyClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19CFA7BC3BCE0F4BE73472CE /* TavilyClient.swift */; };
 		8D576191CDD25804184A6787 /* CaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBCFF4BCD9B174875C77DEE4 /* CaptureEngine.swift */; };
 		902B164FE761C1B472AD6887 /* MemoryMCPHandlers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B0316E30DB3E471E39118F5 /* MemoryMCPHandlers.swift */; };
@@ -72,6 +75,7 @@
 		9CFCF19D86BF1CDA860DC809 /* SpeakerDiarizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BDD38A02DCD4D041036A917 /* SpeakerDiarizer.swift */; };
 		9D83194945381FE9D5E45551 /* MeetingDocumentsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB0812581ED258DA87687B8A /* MeetingDocumentsSection.swift */; };
 		9DEFB6C5796126A906E33269 /* PermissionsOnboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = E783C190734A044F4D11D5DE /* PermissionsOnboarding.swift */; };
+		A3B88309B8B74373FAFA744F /* TranscriptTimestampResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF53A9D9403E0DF6357402AA /* TranscriptTimestampResolver.swift */; };
 		B204E2EE1444E772AA1A1923 /* MeetingDiarizing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B0E6982AFBB133DBE973628 /* MeetingDiarizing.swift */; };
 		B43E8B7335DBAFC5F2D6068A /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 1926D9934CF11D35C75662E9 /* FluidAudio */; };
 		B43F95A164C7BCB455115C43 /* Ollama.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37DC158E71F8C6F1BA222EDF /* Ollama.swift */; };
@@ -129,6 +133,7 @@
 		2D186E7FE68A4450A5E3F31C /* LLMClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMClient.swift; sourceTree = "<group>"; };
 		2E0F4F2BEC7D8273CD847AC4 /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
 		3023EB74C109DDDE89835020 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		337F88478A854D38446312D6 /* MeetingStructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingStructure.swift; sourceTree = "<group>"; };
 		358C4E339FFCA3376302B905 /* Types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Types.swift; sourceTree = "<group>"; };
 		3693EFF0B0BEC91A599D373F /* LiveAssistantEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveAssistantEngine.swift; sourceTree = "<group>"; };
 		37DC158E71F8C6F1BA222EDF /* Ollama.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ollama.swift; sourceTree = "<group>"; };
@@ -144,6 +149,7 @@
 		4BAB738C3D6CD3024684BFAF /* FluidAudioModelStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluidAudioModelStore.swift; sourceTree = "<group>"; };
 		51B4BC53805606E0E673C85E /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		52A27E1668E53470A282F524 /* ConfettiCannonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiCannonView.swift; sourceTree = "<group>"; };
+		5A1CC27BB552A1812CEB5B24 /* SauronPrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SauronPrompts.swift; sourceTree = "<group>"; };
 		5CC6A6F43FEE35F05011090C /* MediaEncodePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaEncodePolicy.swift; sourceTree = "<group>"; };
 		5CCE239FF6E2FF9E668538C6 /* EventKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = EventKit.framework; path = System/Library/Frameworks/EventKit.framework; sourceTree = SDKROOT; };
 		5D5EFE6879936B26EA5368CE /* ReactiveWaveformLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReactiveWaveformLine.swift; sourceTree = "<group>"; };
@@ -159,6 +165,7 @@
 		6C6840B3B6B1A3CD5C12FFBD /* MeetingUserNotesEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingUserNotesEditor.swift; sourceTree = "<group>"; };
 		6F53ADB8512545A02C501A26 /* AudioInputDeviceWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioInputDeviceWatcher.swift; sourceTree = "<group>"; };
 		707BC17E5CE3C97484E02177 /* GlobalHotkeyMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyMonitor.swift; sourceTree = "<group>"; };
+		71AF3245F42119EFDEDD4D99 /* TrackedItemProposalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackedItemProposalStore.swift; sourceTree = "<group>"; };
 		7373580292D5939611ACCB4D /* MeetingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingStore.swift; sourceTree = "<group>"; };
 		7C416F65690F1F4BF23A317B /* MeetingDocumentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDocumentStore.swift; sourceTree = "<group>"; };
 		7D00DFE50D662587D4A57ADB /* MemoryMCPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryMCPServer.swift; sourceTree = "<group>"; };
@@ -179,6 +186,7 @@
 		AB41B13BE838372D5696C6C0 /* Summarizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Summarizer.swift; sourceTree = "<group>"; };
 		AB695135BBB11FDCDA351763 /* DashboardAskTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardAskTab.swift; sourceTree = "<group>"; };
 		AE17A969BCFD53E1BEE8919F /* AgentProviders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentProviders.swift; sourceTree = "<group>"; };
+		AF53A9D9403E0DF6357402AA /* TranscriptTimestampResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptTimestampResolver.swift; sourceTree = "<group>"; };
 		B0142BA11EB3AF1C74BACEE1 /* MediaCompose.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCompose.swift; sourceTree = "<group>"; };
 		B9C0B1EE8A9A54A430009E86 /* DashboardHomeTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardHomeTab.swift; sourceTree = "<group>"; };
 		BAE0C6B42B569F67E5CDD033 /* PromptAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptAlert.swift; sourceTree = "<group>"; };
@@ -230,6 +238,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		11C0C262F7A9640EE2217CBA /* Prompts */ = {
+			isa = PBXGroup;
+			children = (
+				5A1CC27BB552A1812CEB5B24 /* SauronPrompts.swift */,
+			);
+			path = Prompts;
+			sourceTree = "<group>";
+		};
 		122B8A3546016ED225E38D50 = {
 			isa = PBXGroup;
 			children = (
@@ -379,6 +395,14 @@
 			path = Onboarding;
 			sourceTree = "<group>";
 		};
+		9B90212A16A5CCA3464DC70D /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				337F88478A854D38446312D6 /* MeetingStructure.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
 		A7809D5D843E80B1B0B98D85 /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
@@ -387,6 +411,7 @@
 				7373580292D5939611ACCB4D /* MeetingStore.swift */,
 				14A88653CB16E58B08B97254 /* Models.swift */,
 				8D468CFCF3B07323F6601D6F /* SpeakerProfileStore.swift */,
+				71AF3245F42119EFDEDD4D99 /* TrackedItemProposalStore.swift */,
 				F7ED3188298AB89CC0207CE1 /* TrackedItemStore.swift */,
 			);
 			path = Persistence;
@@ -408,6 +433,7 @@
 		B31CB1C0975394716385ED2B /* Intelligence */ = {
 			isa = PBXGroup;
 			children = (
+				11C0C262F7A9640EE2217CBA /* Prompts */,
 				BB007E425FF4315F412548B0 /* DashboardChatStore.swift */,
 				15211A717601E5D65B5D5E95 /* DocumentTextExtractor.swift */,
 				3693EFF0B0BEC91A599D373F /* LiveAssistantEngine.swift */,
@@ -418,6 +444,7 @@
 				9BA10B6753304EB58A44131C /* PresenceHeuristicsScorer.swift */,
 				AB41B13BE838372D5696C6C0 /* Summarizer.swift */,
 				5EC39D00FCF6A891E7903A5D /* TrackedItemReconciler.swift */,
+				AF53A9D9403E0DF6357402AA /* TranscriptTimestampResolver.swift */,
 			);
 			path = Intelligence;
 			sourceTree = "<group>";
@@ -455,6 +482,7 @@
 				B31CB1C0975394716385ED2B /* Intelligence */,
 				2A3144F9EA34D2851C865552 /* MCP */,
 				3D23A8711E1C13DDD4421AF3 /* MenuBar */,
+				9B90212A16A5CCA3464DC70D /* Models */,
 				918883581D16C5BB83BDDEEE /* Onboarding */,
 				CA8BBBE652F1AB844F1F5A0E /* Panels */,
 				A7809D5D843E80B1B0B98D85 /* Persistence */,
@@ -627,6 +655,7 @@
 				75E9E770FB410534CE5EAC05 /* MeetingMemoryQuery.swift in Sources */,
 				316358BCA65B784B929ED2A4 /* MeetingMemoryStore.swift in Sources */,
 				D5141986501AA79B0368BAD6 /* MeetingStore.swift in Sources */,
+				061BA53A84A3A8DCF191F4EF /* MeetingStructure.swift in Sources */,
 				0D788E2C8E025A6EF560FF73 /* MeetingUserNotesEditor.swift in Sources */,
 				55D27F05526685B7D319C352 /* MeetingWindowPicker.swift in Sources */,
 				902B164FE761C1B472AD6887 /* MemoryMCPHandlers.swift in Sources */,
@@ -646,6 +675,7 @@
 				CD98F6566875DBFA6F622FF8 /* RecordingAmbientBackground.swift in Sources */,
 				BF2581954DE70D184D135BAD /* ReportWindow.swift in Sources */,
 				4DDD7DB4D9DEB8DF80A2344C /* SauronApp.swift in Sources */,
+				802B896A604076F93D0CED30 /* SauronPrompts.swift in Sources */,
 				5FC2CEDAB8BA30675FFEE5A4 /* ScreenCaptureAccess.swift in Sources */,
 				C7D2BFA242EBA6DA302CB1E2 /* SettingsStore.swift in Sources */,
 				37FF9A2A504FCE82E6FD1C49 /* SettingsView.swift in Sources */,
@@ -655,9 +685,11 @@
 				4D2705DDF4B163C894C68AB0 /* SystemAudioTap.swift in Sources */,
 				857E146A1920916744973A5D /* TavilyClient.swift in Sources */,
 				1A53169C96BFF6627ED6684D /* Theme.swift in Sources */,
+				585A849BFDCD7BEC2B2C9B27 /* TrackedItemProposalStore.swift in Sources */,
 				542A047834E55B221940B742 /* TrackedItemReconciler.swift in Sources */,
 				CB2091EAA0037AD68D1364BC /* TrackedItemStore.swift in Sources */,
 				77B862579BF821B2AA6CD307 /* TranscriptPanel.swift in Sources */,
+				A3B88309B8B74373FAFA744F /* TranscriptTimestampResolver.swift in Sources */,
 				CC2B57ED42DCF83E84FC1B74 /* TranscriptionEngine.swift in Sources */,
 				0662F8AD7507B1A31878B4A8 /* Types.swift in Sources */,
 				58011291A9A02C7FFAA8B44F /* WindowOpener.swift in Sources */,
@@ -685,7 +717,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_TEAM = MZSC4FTLNA;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -700,7 +732,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.23;
+				MARKETING_VERSION = 0.1.24;
 				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.Sauron;
 				PRODUCT_NAME = Sauron;
 				SDKROOT = macosx;
@@ -718,7 +750,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_TEAM = MZSC4FTLNA;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -733,7 +765,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.23;
+				MARKETING_VERSION = 0.1.24;
 				PRODUCT_BUNDLE_IDENTIFIER = app.sauron.Sauron;
 				PRODUCT_NAME = Sauron;
 				SDKROOT = macosx;

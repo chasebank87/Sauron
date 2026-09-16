@@ -105,6 +105,7 @@ enum MeetingStore {
         guard !meetings.isEmpty else { return 0 }
         let ids = meetings.map(\.id)
         TrackedItemStore.deleteLinked(to: Set(ids), context: context)
+        TrackedItemProposalStore.deleteLinked(to: Set(ids), context: context)
         for meeting in meetings {
             let folder = MediaStore.meetingsRoot
                 .appending(path: meeting.id.uuidString, directoryHint: .isDirectory)

@@ -456,7 +456,7 @@ struct DashboardInsightsTab: View {
     }
 
     private func topTopics(_ meetings: [Meeting]) -> some View {
-        let topics = meetings.compactMap(\.summary).flatMap(\.topics)
+        let topics = meetings.compactMap(\.summary).flatMap(\.topics).map(\.title)
         let counts = Dictionary(grouping: topics, by: { $0 }).mapValues(\.count)
         let top = counts.sorted { $0.value > $1.value }.prefix(12)
         return VStack(alignment: .leading, spacing: 8) {

@@ -12,49 +12,103 @@ enum TrackedItemStore {
         return "\(kind.rawValue)|\(ownerPart)|\(normalizedText)"
     }
 
+    /// Syncs the still-open parts of a fresh summary into `TrackedItem`s. `resolvedInMeeting`
+    /// items are deliberately excluded — they were raised and closed within this same meeting,
+    /// so they never become an open tracked item (see SauronPrompts asksVsActions fragment).
     static func sync(from summary: MeetingSummary, meeting: Meeting, context: ModelContext) {
-        var drafts: [(TrackedItemKind, String, String?, String?)] = []
+        var drafts: [(kind: TrackedItemKind, text: String, owner: String?, due: String?, timestamp: TimeInterval?)] = []
         for action in summary.actionItems {
-            drafts.append((.action, action.text, action.owner, action.due))
+            drafts.append((.action, action.text, action.owner, action.due, action.timestamp))
         }
-        for ask in summary.openQuestions {
-            drafts.append((.ask, ask, nil, nil))
+        for ask in summary.asks where ask.status == .open || ask.status == .deferred {
+            drafts.append((.ask, ask.text, ask.target, nil, ask.timestamp))
+        }
+        for question in summary.openQuestions {
+            drafts.append((.ask, question.text, nil, nil, question.timestamp))
         }
         for blocker in summary.blockers {
-            drafts.append((.blocker, blocker, nil, nil))
+            drafts.append((.blocker, blocker.text, blocker.blockedParty, nil, blocker.timestamp))
         }
         for step in summary.nextSteps {
-            drafts.append((.nextStep, step, nil, nil))
+            drafts.append((.nextStep, step, nil, nil, nil))
         }
 
         let existing = all(context: context)
         let byFingerprint = Dictionary(uniqueKeysWithValues: existing.map { ($0.fingerprint, $0) })
 
         for draft in drafts {
-            let trimmed = draft.1.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmed = draft.text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { continue }
-            let fp = fingerprint(kind: draft.0, text: trimmed, owner: draft.2)
+            let fp = fingerprint(kind: draft.kind, text: trimmed, owner: draft.owner)
             if let item = byFingerprint[fp] {
                 if item.status == .open {
                     item.text = trimmed
-                    item.owner = draft.2
-                    item.dueRaw = draft.3
+                    item.owner = draft.owner
+                    item.dueRaw = draft.due
                     item.sourceMeetingTitle = meeting.title
+                    if let timestamp = draft.timestamp { item.timestamp = timestamp }
                 }
                 continue
             }
             let item = TrackedItem(
-                kind: draft.0,
+                kind: draft.kind,
                 text: trimmed,
-                owner: draft.2,
-                dueRaw: draft.3,
+                owner: draft.owner,
+                dueRaw: draft.due,
                 sourceMeetingID: meeting.id,
                 sourceMeetingTitle: meeting.title,
                 createdAt: meeting.startedAt,
-                fingerprint: fp
+                fingerprint: fp,
+                timestamp: draft.timestamp
             )
             context.insert(item)
         }
+        try? context.save()
+    }
+
+    @discardableResult
+    static func create(
+        kind: TrackedItemKind,
+        text: String,
+        owner: String? = nil,
+        dueRaw: String? = nil,
+        sourceMeetingID: UUID,
+        sourceMeetingTitle: String,
+        context: ModelContext
+    ) -> TrackedItem {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let fp = fingerprint(kind: kind, text: trimmed, owner: owner)
+        if let existing = all(context: context).first(where: { $0.fingerprint == fp && $0.status == .open }) {
+            return existing
+        }
+        let item = TrackedItem(
+            kind: kind,
+            text: trimmed,
+            owner: owner,
+            dueRaw: dueRaw,
+            sourceMeetingID: sourceMeetingID,
+            sourceMeetingTitle: sourceMeetingTitle,
+            fingerprint: fp
+        )
+        context.insert(item)
+        try? context.save()
+        return item
+    }
+
+    static func update(
+        _ item: TrackedItem,
+        kind: TrackedItemKind? = nil,
+        text: String? = nil,
+        owner: String?? = nil,
+        dueRaw: String?? = nil,
+        context: ModelContext
+    ) {
+        let trimmedText = text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let kind { item.kind = kind }
+        if let trimmedText, !trimmedText.isEmpty { item.text = trimmedText }
+        if let owner { item.owner = owner }
+        if let dueRaw { item.dueRaw = dueRaw }
+        item.fingerprint = fingerprint(kind: item.kind, text: item.text, owner: item.owner)
         try? context.save()
     }
 
@@ -96,10 +150,10 @@ enum TrackedItemStore {
         try? context.save()
     }
 
-    static func dismiss(_ item: TrackedItem, context: ModelContext) {
+    static func dismiss(_ item: TrackedItem, by: TrackedItemCompletedBy = .manual, context: ModelContext) {
         item.status = .dismissed
         item.completedAt = .now
-        item.completedBy = .manual
+        item.completedBy = by
         try? context.save()
     }
 

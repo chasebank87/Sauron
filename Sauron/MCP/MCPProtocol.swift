@@ -177,8 +177,6 @@ extension JSONDecoder {
 }
 
 enum MemoryMCPHints {
-    static let systemPromptAddon = """
-    Sauron meeting memory is available via MCP tools: search_meetings, get_meeting, list_recent_meetings, memory_status.
-    Use search_meetings when past meetings may be relevant. Do not invent meeting content.
-    """
+    /// Forwards to the shared prompt library so there's one source of truth for the memory tool addon.
+    static let systemPromptAddon = SauronPrompts.ToolAddon.memory
 }

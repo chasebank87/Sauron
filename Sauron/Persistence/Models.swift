@@ -8,7 +8,8 @@ enum SharedModel {
             Meeting.self,
             TranscriptSegment.self,
             SpeakerProfile.self,
-            TrackedItem.self
+            TrackedItem.self,
+            TrackedItemProposal.self
         ])
         let support = MediaStore.applicationSupport
         let storeURL = support.appending(path: "Sauron.store")
@@ -64,6 +65,7 @@ final class Meeting {
     var assistCardsJSON: String?
     var memoryCitationsJSON: String?
     var presenceJSON: String?
+    var reconciliationLogJSON: String?
     var userNotes: String?
     var memoryIndexedAt: Date?
     var statusRaw: String
@@ -178,6 +180,22 @@ final class Meeting {
                 memoryCitationsJSON = nil
             } else if let data = try? JSONEncoder().encode(newValue) {
                 memoryCitationsJSON = String(data: data, encoding: .utf8)
+            }
+        }
+    }
+
+    /// Audit trail of what the tracked-item reconciler did with this meeting's evidence —
+    /// which prior-meeting items it auto-closed vs. proposed, and why.
+    var reconciliationLog: [ReconciliationLogEntry] {
+        get {
+            guard let reconciliationLogJSON, let data = reconciliationLogJSON.data(using: .utf8) else { return [] }
+            return (try? JSONDecoder().decode([ReconciliationLogEntry].self, from: data)) ?? []
+        }
+        set {
+            if newValue.isEmpty {
+                reconciliationLogJSON = nil
+            } else if let data = try? JSONEncoder().encode(newValue) {
+                reconciliationLogJSON = String(data: data, encoding: .utf8)
             }
         }
     }
@@ -327,6 +345,7 @@ enum TrackedItemStatus: String, Codable, Sendable {
 enum TrackedItemCompletedBy: String, Codable, Sendable {
     case manual
     case auto
+    case agent
 }
 
 @Model
@@ -345,6 +364,10 @@ final class TrackedItem {
     var resolvedInMeetingID: UUID?
     var resolutionNote: String?
     var fingerprint: String
+    /// Where in the source meeting's recording this item was raised — resolved from the
+    /// summary's evidence quote (see TranscriptTimestampResolver), not model-reported. Lets the
+    /// report/Asks UI show a play button that jumps straight to the moment.
+    var timestamp: TimeInterval?
 
     init(
         id: UUID = UUID(),
@@ -356,7 +379,8 @@ final class TrackedItem {
         sourceMeetingID: UUID,
         sourceMeetingTitle: String,
         createdAt: Date = .now,
-        fingerprint: String
+        fingerprint: String,
+        timestamp: TimeInterval? = nil
     ) {
         self.id = id
         self.kindRaw = kind.rawValue
@@ -368,6 +392,7 @@ final class TrackedItem {
         self.sourceMeetingTitle = sourceMeetingTitle
         self.createdAt = createdAt
         self.fingerprint = fingerprint
+        self.timestamp = timestamp
     }
 
     var kind: TrackedItemKind {
@@ -387,4 +412,85 @@ final class TrackedItem {
         }
         set { completedByRaw = newValue?.rawValue }
     }
+}
+
+struct ReconciliationLogEntry: Codable, Equatable, Sendable {
+    var itemID: UUID
+    var status: PriorItemStatus
+    var verification: TrackedItemVerification
+    var confidence: Double
+    var autoApplied: Bool
+    var note: String
+    var at: Date
+}
+
+enum TrackedItemProposalResolution: String, Codable, Sendable {
+    case applied
+    case dismissed
+}
+
+/// A reconciler status change the model proposed but was not confident/verified enough to
+/// auto-apply — `TrackedItemReconciler`'s two-tier verification (see Sauron/Intelligence/TrackedItemReconciler.swift).
+/// Surfaced via the `list_tracked_item_proposals`/`resolve_tracked_item_proposal` MCP tools.
+@Model
+final class TrackedItemProposal {
+    @Attribute(.unique) var id: UUID
+    var trackedItemID: UUID?
+    var sourceMeetingID: UUID
+    var sourceMeetingTitle: String
+    var proposedStatusRaw: String
+    var verificationRaw: String
+    var confidence: Double
+    var note: String
+    var evidence: String
+    var newOwner: String?
+    var supersededByText: String?
+    var createdAt: Date
+    var resolvedAt: Date?
+    var resolvedActionRaw: String?
+
+    init(
+        id: UUID = UUID(),
+        trackedItemID: UUID?,
+        sourceMeetingID: UUID,
+        sourceMeetingTitle: String,
+        proposedStatus: PriorItemStatus,
+        verification: TrackedItemVerification,
+        confidence: Double,
+        note: String,
+        evidence: String,
+        newOwner: String? = nil,
+        supersededByText: String? = nil,
+        createdAt: Date = .now
+    ) {
+        self.id = id
+        self.trackedItemID = trackedItemID
+        self.sourceMeetingID = sourceMeetingID
+        self.sourceMeetingTitle = sourceMeetingTitle
+        self.proposedStatusRaw = proposedStatus.rawValue
+        self.verificationRaw = verification.rawValue
+        self.confidence = confidence
+        self.note = note
+        self.evidence = evidence
+        self.newOwner = newOwner
+        self.supersededByText = supersededByText
+        self.createdAt = createdAt
+    }
+
+    var proposedStatus: PriorItemStatus {
+        get { PriorItemStatus(rawValue: proposedStatusRaw) ?? .inProgress }
+        set { proposedStatusRaw = newValue.rawValue }
+    }
+
+    var verification: TrackedItemVerification {
+        get { TrackedItemVerification(rawValue: verificationRaw) ?? .inferred }
+        set { verificationRaw = newValue.rawValue }
+    }
+
+    var resolvedAction: TrackedItemProposalResolution? {
+        get { resolvedActionRaw.flatMap(TrackedItemProposalResolution.init(rawValue:)) }
+        set { resolvedActionRaw = newValue?.rawValue }
+    }
+
+    var isResolved: Bool { resolvedAt != nil }
 }

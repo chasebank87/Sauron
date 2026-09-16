@@ -129,7 +129,7 @@ struct DashboardLibraryTab: View {
             $0.title.lowercased().contains(needle)
                 || $0.plainTranscript.lowercased().contains(needle)
                 || $0.appName.lowercased().contains(needle)
-                || ($0.summary?.topics.joined(separator: " ").lowercased().contains(needle) ?? false)
+                || ($0.summary?.topics.map(\.title).joined(separator: " ").lowercased().contains(needle) ?? false)
         }
     }
 

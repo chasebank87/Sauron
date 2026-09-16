@@ -182,13 +182,13 @@ final class MeetingSummaryTests: XCTestCase {
         XCTAssertEqual(summary.title, "Launch review")
         XCTAssertEqual(summary.notes, ["Design is ready"])
         XCTAssertEqual(summary.keyPeople, ["Ada", "Chase"])
-        XCTAssertEqual(summary.topics, ["Launch"])
-        XCTAssertEqual(summary.decisions, ["Ship Friday"])
+        XCTAssertEqual(summary.topics.map(\.title), ["Launch"])
+        XCTAssertEqual(summary.decisions.map(\.text), ["Ship Friday"])
         XCTAssertEqual(summary.actionItems.first?.owner, "Ada")
         XCTAssertEqual(summary.actionItems.first?.text, "Cut the branch")
         XCTAssertEqual(summary.actionItems.first?.due, "Thursday")
         XCTAssertEqual(summary.nextSteps, ["Notify support"])
-        XCTAssertEqual(summary.blockers, ["Waiting on legal"])
+        XCTAssertEqual(summary.blockers.map(\.text), ["Waiting on legal"])
     }
 
     func testLegacyJSONStillParses() {
@@ -436,14 +436,11 @@ final class MeetingMemoryTests: XCTestCase {
         let summary = MeetingSummary(
             title: "Sync",
             summary: "We talked about launch.",
-            notes: ["Note A"],
-            keyPeople: [],
-            topics: ["Launch"],
-            decisions: ["Ship Friday"],
-            actionItems: [ActionItem(owner: "Chase", text: "Write docs", due: nil)],
-            nextSteps: [],
-            blockers: [],
-            openQuestions: ["Who owns QA?"],
+            tldr: ["Note A"],
+            topics: [Topic(title: "Launch")],
+            decisions: [Decision(text: "Ship Friday")],
+            actionItems: [ActionItem(text: "Write docs", owner: "Chase", due: nil)],
+            openQuestions: [OpenQuestion(text: "Who owns QA?")],
             quotes: []
         )
         let segments = (0..<15).map { i in
@@ -608,7 +605,16 @@ final class MeetingMemoryTests: XCTestCase {
             "search_meetings",
             "get_meeting",
             "list_recent_meetings",
-            "memory_status"
+            "memory_status",
+            "list_tracked_items",
+            "create_tracked_item",
+            "update_tracked_item",
+            "complete_tracked_item",
+            "reopen_tracked_item",
+            "dismiss_tracked_item",
+            "add_meeting_note",
+            "list_tracked_item_proposals",
+            "resolve_tracked_item_proposal"
         ])
     }
 
@@ -670,15 +676,19 @@ final class MeetingMemoryTests: XCTestCase {
         XCTAssertEqual(a, b)
     }
 
-    func testReconcilerParsesResolvedJSON() {
+    func testReconcilerParsesUpdatesJSON() {
         let id = UUID()
         let raw = """
-        {"resolved":[{"id":"\(id.uuidString)","note":"Done in standup"}]}
+        {"updates":[{"id":"\(id.uuidString)","status":"completed","verification":"transcriptExplicit","confidence":0.9,"autoApply":true,"note":"Done in standup","evidence":"we shipped it"}],"unmatchedHints":["orphan hint"]}
         """
         let parsed = TrackedItemReconciler.parse(raw)
-        XCTAssertEqual(parsed.count, 1)
-        XCTAssertEqual(parsed.first?.id, id)
-        XCTAssertEqual(parsed.first?.note, "Done in standup")
+        XCTAssertEqual(parsed.updates.count, 1)
+        XCTAssertEqual(parsed.updates.first?.id, id)
+        XCTAssertEqual(parsed.updates.first?.status, .completed)
+        XCTAssertEqual(parsed.updates.first?.verification, .transcriptExplicit)
+        XCTAssertEqual(parsed.updates.first?.note, "Done in standup")
+        XCTAssertTrue(parsed.updates.first?.autoApply ?? false)
+        XCTAssertEqual(parsed.unmatchedHints, ["orphan hint"])
     }
 }
 
