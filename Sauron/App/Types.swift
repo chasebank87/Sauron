@@ -81,6 +81,39 @@ enum CaptureMedia: String, CaseIterable, Identifiable, Codable, Sendable {
     }
 }
 
+enum RecordingResolution: String, CaseIterable, Identifiable, Codable, Sendable {
+    case auto
+    case hd
+    case uhd4K
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .auto: "Auto"
+        case .hd: "HD (1080p)"
+        case .uhd4K: "4K (2160p)"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .auto: "Native resolution of the captured window or display"
+        case .hd: "Caps capture at 1920×1080 — smaller files"
+        case .uhd4K: "Caps capture at 3840×2160 — sharper, larger files"
+        }
+    }
+
+    /// Longest-edge cap in pixels; `nil` means use CaptureEngine's default safety ceiling.
+    var maxLongEdge: CGFloat? {
+        switch self {
+        case .auto: nil
+        case .hd: 1920
+        case .uhd4K: 3840
+        }
+    }
+}
+
 enum CaptureAudioSource: String, CaseIterable, Identifiable, Codable, Sendable {
     case system
     case meetingApp

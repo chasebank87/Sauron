@@ -40,6 +40,7 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         modes: Set<RecordMode>,
         audioSource: CaptureAudioSource,
         videoTarget: CaptureVideoTarget = .auto,
+        videoResolution: RecordingResolution = .auto,
         microphoneDeviceID: String?,
         folder: URL
     ) async throws {
@@ -107,7 +108,11 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         }
 
         if includeVideo {
-            let videoConfiguration = makeVideoConfiguration(filter: videoFilter, content: content)
+            let videoConfiguration = makeVideoConfiguration(
+                filter: videoFilter,
+                content: content,
+                resolution: videoResolution
+            )
             do {
                 videoStream = try await startVideoStream(filter: videoFilter, configuration: videoConfiguration)
             } catch {
@@ -349,7 +354,11 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         return configuration
     }
 
-    private func makeVideoConfiguration(filter: SCContentFilter, content: SCShareableContent) -> SCStreamConfiguration {
+    private func makeVideoConfiguration(
+        filter: SCContentFilter,
+        content: SCShareableContent,
+        resolution: RecordingResolution
+    ) -> SCStreamConfiguration {
         let configuration = SCStreamConfiguration()
         configuration.capturesAudio = false
         configuration.captureMicrophone = false
@@ -370,7 +379,9 @@ final class CaptureEngine: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
             width = 1280
             height = 720
         }
-        let maxEdge: CGFloat = 3200
+        // .auto keeps native resolution, only guarding against pathological sizes; HD/4K
+        // are explicit user-chosen caps.
+        let maxEdge: CGFloat = resolution.maxLongEdge ?? 3200
         let longest = max(width, height)
         let scale = longest > maxEdge ? maxEdge / longest : 1
         // H.264 requires even dimensions — odd heights produce a stripe / corrupt frames.

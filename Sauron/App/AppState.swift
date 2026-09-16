@@ -706,6 +706,7 @@ final class AppState {
                 modes: modes,
                 audioSource: promptAudioSource,
                 videoTarget: promptVideoTarget,
+                videoResolution: settings.recordingResolution,
                 microphoneDeviceID: priority.first?.captureDeviceID,
                 folder: MediaStore.folder(for: meeting.id)
             )

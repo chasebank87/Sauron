@@ -121,6 +121,14 @@ struct GeneralSettingsView: View {
                     Text(CaptureMedia.videoAndAudio.title).tag(CaptureMedia.videoAndAudio)
                     Text(CaptureMedia.audioOnly.title).tag(CaptureMedia.audioOnly)
                 }
+                Picker("Video resolution", selection: $settings.recordingResolution) {
+                    ForEach(RecordingResolution.allCases) { resolution in
+                        Text(resolution.title).tag(resolution)
+                    }
+                }
+                Text(settings.recordingResolution.subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Toggle("Transcript", isOn: $settings.defaultTranscript)
                 Toggle("Meeting app only", isOn: $settings.meetingAppAudioOnly)
                 Text("Off captures all Mac audio. On limits remote audio to the meeting app (Zoom, Teams, etc.).")

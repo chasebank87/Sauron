@@ -55,6 +55,11 @@ final class SettingsStore {
         didSet { defaults.set(micPriorityIDs, forKey: Keys.micPriority) }
     }
 
+    /// Caps captured video resolution; `.auto` keeps today's native-resolution behavior.
+    var recordingResolution: RecordingResolution {
+        didSet { defaults.set(recordingResolution.rawValue, forKey: Keys.recordingResolution) }
+    }
+
     var defaultAudioSource: CaptureAudioSource {
         get { meetingAppAudioOnly ? .meetingApp : .system }
         set { meetingAppAudioOnly = newValue == .meetingApp }
@@ -358,6 +363,8 @@ final class SettingsStore {
         defaultTranscript = defaults.object(forKey: Keys.transcript) as? Bool ?? true
         meetingAppAudioOnly = defaults.bool(forKey: Keys.meetingAppAudio)
         micPriorityIDs = defaults.stringArray(forKey: Keys.micPriority) ?? []
+        let resolutionRaw = defaults.string(forKey: Keys.recordingResolution) ?? RecordingResolution.auto.rawValue
+        recordingResolution = RecordingResolution(rawValue: resolutionRaw) ?? .auto
         let providerRaw = defaults.string(forKey: Keys.provider) ?? LLMProviderKind.ollama.rawValue
         providerKind = LLMProviderKind(rawValue: providerRaw) ?? .ollama
         ollamaURL = defaults.string(forKey: Keys.ollamaURL) ?? OllamaProvider.defaultBaseURL.absoluteString
@@ -416,6 +423,7 @@ final class SettingsStore {
         static let transcript = "recordTranscript"
         static let meetingAppAudio = "meetingAppAudioOnly"
         static let micPriority = "micPriorityIDs"
+        static let recordingResolution = "recordingResolution"
         static let provider = "llmProvider"
         static let ollamaURL = "ollamaURL"
         static let lmStudioURL = "lmStudioURL"
