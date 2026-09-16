@@ -2,7 +2,6 @@ import AVFoundation
 import AVKit
 import AppKit
 import SwiftUI
-import os
 
 struct ReportWindow: View {
     @Environment(AppState.self) private var appState
@@ -20,7 +19,35 @@ struct ReportWindow: View {
             }
         }
         .frame(minWidth: 780, minHeight: 560)
-        .background(.clear)
+        .background(WindowFullScreenEnabler())
+    }
+}
+
+/// Opts the "Meeting Report" window into full-screen support so AVPlayerView's fullscreen
+/// toggle works. Placed at the window's root rather than inside the video player itself:
+/// the video row gets torn down and recreated by SwiftUI far more often than the window
+/// exists, so a per-video-instance fix loses the race almost every time and rarely gets to
+/// actually apply. `.windowStyle(.hiddenTitleBar)` sets `.fullScreenNone` by default, which
+/// blocks fullscreen outright even alongside `.fullScreenPrimary` — it must be removed, not
+/// just outnumbered.
+private struct WindowFullScreenEnabler: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        DispatchQueue.main.async { configure(view) }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        configure(nsView)
+    }
+
+    private func configure(_ view: NSView) {
+        guard let window = view.window else { return }
+        window.collectionBehavior.remove(.fullScreenNone)
+        window.collectionBehavior.insert(.fullScreenPrimary)
+        if !window.styleMask.contains(.resizable) {
+            window.styleMask.insert(.resizable)
+        }
     }
 }
 
@@ -215,7 +242,14 @@ struct ReportDetailView: View {
     }
 
     private var recordingsCard: some View {
-        reportBlock(title: "Recording", systemImage: "play.rectangle") {
+        // Deliberately not using reportBlock/GlassCard's .glassEffect() here: it continuously
+        // tears down and recreates embedded AppKit views (confirmed via logging — MediaPlayerView
+        // was being rebuilt roughly once per second), which killed AVKit's fullscreen transition
+        // before it could ever complete. .regularMaterial is a plain, static background with no
+        // such live-recomposition behavior.
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Recording", systemImage: "play.rectangle")
+                .font(.headline)
             VStack(alignment: .leading, spacing: 14) {
                 if appState.postMeetingPhase == .savingCapture {
                     HStack(spacing: 10) {
@@ -265,6 +299,8 @@ struct ReportDetailView: View {
                 }
             }
         }
+        .padding(20)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private func audioRow(title: String, url: URL) -> some View {
@@ -998,7 +1034,6 @@ private struct MediaPlayerView: NSViewRepresentable {
     /// Changes when capture/mix finishes so we reload a finalized file (same URL).
     var reloadToken: UUID = UUID()
     var playback: ReportPlaybackController? = nil
-    /// Shows AVKit's native fullscreen/theater toggle — only meaningful when `url` has video.
     var allowsFullScreen: Bool = false
 
     func makeCoordinator() -> Coordinator {
@@ -1010,7 +1045,6 @@ private struct MediaPlayerView: NSViewRepresentable {
         view.controlsStyle = .inline
         view.videoGravity = .resizeAspect
         view.showsFullScreenToggleButton = allowsFullScreen
-        view.delegate = context.coordinator
         context.coordinator.load(
             url: url,
             audioURL: audioURL,
@@ -1029,9 +1063,6 @@ private struct MediaPlayerView: NSViewRepresentable {
             token: reloadToken,
             playback: playback
         )
-        if allowsFullScreen {
-            context.coordinator.enableWindowFullScreen(for: nsView)
-        }
     }
 
     static func dismantleNSView(_ nsView: AVPlayerView, coordinator: Coordinator) {
@@ -1045,57 +1076,11 @@ private struct MediaPlayerView: NSViewRepresentable {
     }
 
     @MainActor
-    final class Coordinator: NSObject, AVPlayerViewDelegate {
-        nonisolated private static let log = Logger(subsystem: "app.sauron.Sauron", category: "MediaPlayerView")
-
+    final class Coordinator {
         private var loadedVideo: URL?
         private var loadedAudio: URL?
         private var loadedToken: UUID?
-        private var didConfigureFullScreenWindow = false
         var playback: ReportPlaybackController?
-
-        /// AVPlayerView's fullscreen toggle silently no-ops unless the containing window
-        /// opts into `.fullScreenPrimary` — SwiftUI's `.windowStyle(.hiddenTitleBar)` doesn't
-        /// set that by default. The window isn't available until the view is installed in
-        /// the hierarchy, so this runs from `updateNSView` rather than `makeNSView`.
-        func enableWindowFullScreen(for view: AVPlayerView) {
-            guard !didConfigureFullScreenWindow else { return }
-            guard let window = view.window else {
-                let id = ObjectIdentifier(view)
-                let appWindows = NSApp.windows.map { w in
-                    "'\(w.title)' visible=\(w.isVisible) key=\(w.isKeyWindow) level=\(w.level.rawValue)"
-                }.joined(separator: " | ")
-                Self.log.debug("enableWindowFullScreen: view(\(String(describing: id), privacy: .public)).window == nil, superview=\(String(describing: view.superview), privacy: .public), NSApp.windows=[\(appWindows, privacy: .public)]")
-                return
-            }
-            didConfigureFullScreenWindow = true
-            Self.log.debug("enableWindowFullScreen: before styleMask=\(window.styleMask.rawValue, privacy: .public) collectionBehavior=\(window.collectionBehavior.rawValue, privacy: .public)")
-            // SwiftUI's .windowStyle(.hiddenTitleBar) sets .fullScreenNone by default, which
-            // blocks fullscreen outright even if .fullScreenPrimary is also present — both
-            // together is contradictory and .fullScreenNone wins. Must remove it explicitly.
-            window.collectionBehavior.remove(.fullScreenNone)
-            window.collectionBehavior.insert(.fullScreenPrimary)
-            if !window.styleMask.contains(.resizable) {
-                window.styleMask.insert(.resizable)
-            }
-            Self.log.debug("enableWindowFullScreen: after styleMask=\(window.styleMask.rawValue, privacy: .public) collectionBehavior=\(window.collectionBehavior.rawValue, privacy: .public)")
-        }
-
-        nonisolated func playerViewWillEnterFullScreen(_ playerView: AVPlayerView) {
-            Self.log.debug("playerViewWillEnterFullScreen")
-        }
-
-        nonisolated func playerViewDidEnterFullScreen(_ playerView: AVPlayerView) {
-            Self.log.debug("playerViewDidEnterFullScreen")
-        }
-
-        nonisolated func playerViewWillExitFullScreen(_ playerView: AVPlayerView) {
-            Self.log.debug("playerViewWillExitFullScreen")
-        }
-
-        nonisolated func playerViewDidExitFullScreen(_ playerView: AVPlayerView) {
-            Self.log.debug("playerViewDidExitFullScreen")
-        }
 
         func load(
             url: URL,
