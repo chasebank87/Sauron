@@ -123,14 +123,17 @@ enum MediaEncodePolicy {
         }
     }
 
-    /// Ordered mux presets — remux first, then hardware HEVC, then H.264 size ladders.
+    /// Ordered mux presets — remux first, then a quality-preserving HEVC re-encode, then
+    /// explicit-resolution fallbacks. Passthrough almost always fails here (the composition
+    /// mixes a video track from the raw capture with an audio track from a separately mixed
+    /// file, which AVFoundation can't remux losslessly), so the *next* preset tried is what
+    /// actually determines the resolution/quality most recordings end up at — it must not
+    /// hard-cap at 1080p under normal thermal conditions, or every recording gets silently
+    /// downscaled regardless of the user's chosen capture resolution.
     static var muxPresetPreference: [String] {
         var presets: [String] = [AVAssetExportPresetPassthrough]
         if prefersHEVC {
-            presets += [
-                AVAssetExportPresetHEVC1920x1080,
-                AVAssetExportPresetHEVCHighestQuality
-            ]
+            presets.append(AVAssetExportPresetHEVCHighestQuality)
         }
         if shouldUseLowerQualityExport {
             presets += [
@@ -141,9 +144,9 @@ enum MediaEncodePolicy {
             ]
         } else {
             presets += [
+                AVAssetExportPresetHighestQuality,
                 AVAssetExportPreset1920x1080,
-                AVAssetExportPreset1280x720,
-                AVAssetExportPresetHighestQuality
+                AVAssetExportPreset1280x720
             ]
         }
         return presets
